@@ -1,0 +1,7 @@
+.*
+!.gitignore
+Music
+build
+config.json
+internal
+out
