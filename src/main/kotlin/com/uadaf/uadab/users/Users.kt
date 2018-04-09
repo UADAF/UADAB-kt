@@ -91,8 +91,7 @@ object Users {
     }
 
     fun of(name: String): UADABUser? {
-        val lcName = name.toLowerCase()
-        return USERS_BY_NAME[lcName] ?: USERS_BY_ALIAS[lcName]
+        return USERS_BY_NAME[name] ?: USERS_BY_ALIAS[name]
     }
 
 
@@ -171,7 +170,9 @@ object Users {
     }
 
     private fun mapUser(user: UADABUser) {
-        USERS_BY_NAME[user.name] = user
+        synchronized(USERS_BY_NAME) {
+            USERS_BY_NAME[user.name] = user
+        }
         USERS_BY_SSN[user.ssn.intVal] = user
         USERS_BY_DISCORD[user.discordUser] = user
     }
@@ -193,22 +194,25 @@ object Users {
     }
 
     internal fun rename(prev: String, new: String) {
-        USERS_BY_NAME[new] = USERS_BY_NAME[prev]!!
-        USERS_BY_NAME.remove(prev)
+        synchronized(USERS_BY_NAME) {
+            USERS_BY_NAME[new] = USERS_BY_NAME[prev]!!
+            USERS_BY_NAME.remove(prev)
+        }
     }
 
-    @Synchronized
     fun save() {
         Files.createDirectories(USERS_DIR)
-        USERS_BY_NAME.forEach(Unchecked.biConsumer { n, u ->
-            log.debug(String.format("Saving user '%s'", n))
-            val file = getUserFile(u)
-            if (!Files.exists(file)) {
-                Files.createFile(file)
-            }
-            Files.write(file, Instances.getGson().toJson(u.data).toByteArray(StandardCharsets.UTF_8))
-            log.debug(String.format("User '%s' saved", n))
-        })
+        synchronized(USERS_BY_NAME) {
+            USERS_BY_NAME.forEach(Unchecked.biConsumer { n, u ->
+                log.debug(String.format("Saving user '%s'", n))
+                val file = getUserFile(u)
+                if (!Files.exists(file)) {
+                    Files.createFile(file)
+                }
+                Files.write(file, Instances.getGson().toJson(u.data).toByteArray(StandardCharsets.UTF_8))
+                log.debug(String.format("User '%s' saved", n))
+            })
+        }
     }
 
 }
