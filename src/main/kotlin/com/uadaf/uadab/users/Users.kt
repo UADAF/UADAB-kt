@@ -190,7 +190,7 @@ object Users {
     }
 
     internal fun getUserFile(user: String): Path {
-        return USERS_DIR.resolve(user + ".json")
+        return USERS_DIR.resolve("$user.json")
     }
 
     internal fun rename(prev: String, new: String) {
