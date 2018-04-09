@@ -40,6 +40,9 @@ object Users {
             log.info("users.json not found, no reserved users loaded")
         }
         try {
+            if(!Files.exists(USERS_DIR)) {
+                Files.createDirectories(USERS_DIR)
+            }
             Files.list(USERS_DIR).forEach(Unchecked.consumer { p ->
                 var name = p.fileName.toString()
                 try {
