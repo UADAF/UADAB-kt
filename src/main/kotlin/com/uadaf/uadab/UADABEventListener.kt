@@ -36,7 +36,7 @@ object UADABEventListener : ListenerAdapter() {
     override fun onReady(e: ReadyEvent) {
         UADAB.initBot(e.jda)
         Users.totalAuth(e.jda.users)
-        if (Users.of("admin") == null) {
+        if (Users.of("Admin") == null) {
             UADAB.claimCode = UUID.randomUUID()
             println("No admin found. Issuing claim code: ${UADAB.claimCode}")
         }

@@ -111,6 +111,6 @@ object UADAB {
 
 
     fun contactAdmin(embed: MessageEmbed) {
-        Users.of("admin")?.discordUser?.openPrivateChannel()?.queue { ch -> ch.sendMessage(embed).queue() }
+        Users.of("Admin")?.discordUser?.openPrivateChannel()?.queue { ch -> ch.sendMessage(embed).queue() }
     }
 }
