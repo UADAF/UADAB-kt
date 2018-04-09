@@ -150,7 +150,6 @@ object Users {
         } else {
             user = UADABUser(name)
             user.classification = Classification.getClassification(name)!!
-            mapUser(user)
         }
         initDiscord(user, discordUser)
         return AuthState.SUCCESS
@@ -172,7 +171,7 @@ object Users {
     }
 
     private fun mapUser(user: UADABUser) {
-        USERS_BY_NAME[user.name.toLowerCase()] = user
+        USERS_BY_NAME[user.name] = user
         USERS_BY_SSN[user.ssn.intVal] = user
         USERS_BY_DISCORD[user.discordUser] = user
     }

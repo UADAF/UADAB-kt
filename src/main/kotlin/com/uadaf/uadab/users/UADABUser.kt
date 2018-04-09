@@ -19,14 +19,12 @@ import kotlin.properties.Delegates
 class UADABUser internal constructor(name: String) {
     var name: String by Delegates.observable("") { _, prev, new ->
         if (prev != "") {
-            Users.save()
             val dataFile = Users.getUserFile(prev)
             if (Files.exists(dataFile)) {
                 println(new)
                 Files.move(dataFile, Users.getUserFile(new))
             }
             Users.rename(prev, new)
-            Users.save()
         }
     }
     lateinit var discordUser: User
