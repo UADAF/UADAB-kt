@@ -150,6 +150,7 @@ object Users {
         } else {
             user = UADABUser(name)
             user.classification = Classification.getClassification(name)!!
+            mapUser(user)
         }
         initDiscord(user, discordUser)
         return AuthState.SUCCESS
