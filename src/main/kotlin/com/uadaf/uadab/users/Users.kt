@@ -197,6 +197,7 @@ object Users {
         USERS_BY_NAME.remove(prev)
     }
 
+    @Synchronized
     fun save() {
         Files.createDirectories(USERS_DIR)
         USERS_BY_NAME.forEach(Unchecked.biConsumer { n, u ->
