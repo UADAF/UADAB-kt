@@ -73,13 +73,13 @@ object Users {
     fun getReservedUser(discordUser: User): Optional<JsonObject> {
         return USERS_INFO.parallelStream()
                 .filter { u -> u.has("discord") }
-                .filter { u -> u.get("discord").asString == discordUser.id }
+                .filter { u -> u["discord"].asString == discordUser.id }
                 .findAny()
     }
 
     fun getReservedUser(name: String): Optional<JsonObject> {
         return USERS_INFO.parallelStream()
-                .filter { u -> u.get("name").asString == name }
+                .filter { u -> u["name"].asString == name }
                 .findAny()
     }
 
@@ -131,12 +131,12 @@ object Users {
         }
         val reservedUser = getReservedUser(discordUser)
         if (reservedUser.isPresent) {
-            name = reservedUser.get().get("name").asString
+            name = reservedUser.get()["name"].asString
         } else {
             val reservedName = getReservedUser(name)
             if (reservedName.isPresent) {
                 val o = reservedName.get()
-                if (!o.has("discord") || o.get("discord").asString != discordUser.id) {
+                if (!o.has("discord") || o["discord"].asString != discordUser.id) {
                     return AuthState.RESERVED_NAME
                 }
             } else if (Classification.getClassification(name) !== Classification.IRRELEVANT) {

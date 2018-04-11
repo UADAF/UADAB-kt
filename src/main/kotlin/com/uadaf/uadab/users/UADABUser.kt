@@ -60,7 +60,7 @@ class UADABUser internal constructor(name: String) {
         }
 
     val vkAuthClientId: String
-        get() = data.get("VKA_ID").asString
+        get() = data["VKA_ID"].asString
 
     val avatarWithClassUrl: CompletableFuture<String>
         get() = getAvatarWithClassUrl(classification)
@@ -79,7 +79,7 @@ class UADABUser internal constructor(name: String) {
     private fun loadData(dataFile: Path) {
         data = UADAB.parse(dataFile).asJsonObject
         if (data.has("SSN")) {
-            ssn = SSN(data.get("SSN").asInt)
+            ssn = SSN(data["SSN"].asInt)
         } else {
             ssn = SSN.randomSSN()
             updateSSN()
@@ -87,7 +87,7 @@ class UADABUser internal constructor(name: String) {
         if (data.has("DISCORD_ID")) {
             try {
                 val bot = UADAB.bot
-                val discordUser = bot.getUserById(data.get("DISCORD_ID").asString)
+                val discordUser = bot.getUserById(data["DISCORD_ID"].asString)
                 var discordData: JsonObject? = data.getAsJsonObject("discord")
                 if (discordData == null) {
                     discordData = JsonObject()
@@ -98,7 +98,7 @@ class UADABUser internal constructor(name: String) {
             }
         }
         classification = if (data.has("CLASSIFICATION")) {
-            Classification.getClassification(data.get("CLASSIFICATION").asString)!!
+            Classification.getClassification(data["CLASSIFICATION"].asString)!!
         } else {
             Classification.getClassification(name)!!
         }
@@ -111,10 +111,10 @@ class UADABUser internal constructor(name: String) {
         data = JsonObject()
         Users.getReservedUser(name).ifPresent({ info ->
             if (info.has("vka")) {
-                data.addProperty("VKA_ID", info.get("vka").asString)
+                data.addProperty("VKA_ID", info["vka"].asString)
             }
             if (info.has("intVal")) {
-                ssn = SSN(info.get("intVal").asInt)
+                ssn = SSN(info["intVal"].asInt)
                 updateSSN()
             }
         })

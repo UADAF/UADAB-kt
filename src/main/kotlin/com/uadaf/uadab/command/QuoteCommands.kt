@@ -34,10 +34,10 @@ object QuoteCommands : ICommandList {
                     "task" to "GET",
                     "mode" to "total"))
                     .build().inputStream, StandardCharsets.UTF_8)).asJsonObject
-            if (rep.get("error").asBoolean) {
-                throw RuntimeException("Something went wrong: " + rep.get("msg").asString)
+            if (rep["error"].asBoolean) {
+                throw RuntimeException("Something went wrong: " + rep["msg"].asString)
             }
-            return rep.get("count").asInt
+            return rep["count"].asInt
         }
 
     override fun init(): Array<Command> {
@@ -187,7 +187,7 @@ object QuoteCommands : ICommandList {
         e.reply(EmbedBuilder()
                 .setColor(cat.color)
                 .setThumbnail(cat.img)
-                .addField("${quote.get("author").asString}:", quote.get("quote").asString, false)
+                .addField("${quote["author"].asString}:", quote["quote"].asString, false)
                 .setFooter("ID: $id", null)
                 .build()
         )
