@@ -9,7 +9,7 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.users.ASSETS
-import com.uadaf.uadab.utils.JavaHttpRequestBuilder
+import com.uadaf.uadab.utils.*
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.MessageEmbed
 import java.awt.Color
@@ -33,11 +33,11 @@ object QuoteCommands : ICommandList {
             val rep = Instances.getParser().parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                     "task" to "GET",
                     "mode" to "total"))
-                    .build().inputStream, StandardCharsets.UTF_8)).asJsonObject
-            if (rep["error"].asBoolean) {
-                throw RuntimeException("Something went wrong: " + rep["msg"].asString)
+                    .build().inputStream, StandardCharsets.UTF_8)).obj
+            if (rep["error"].bln) {
+                throw RuntimeException("Something went wrong: " + rep["msg"].str)
             }
-            return rep["count"].asInt
+            return rep["count"].int
         }
 
     override fun init(): Array<Command> {
@@ -94,9 +94,9 @@ object QuoteCommands : ICommandList {
                                     "author" to args[0],
                                     "quote" to args[1],
                                     "key" to UADAB.config.QUOTER_KEY))
-                                    .build().inputStream)).asJsonObject
-                            if (r["error"].asBoolean) {
-                                reply(e, RED, "Something went wrong:", r["msg"].asString, cat.img)
+                                    .build().inputStream)).obj
+                            if (r["error"].bln) {
+                                reply(e, RED, "Something went wrong:", r["msg"].str, cat.img)
                                 e.reactError()
                             } else {
                                 reply(e, cat.color, "Success", "", cat.img)
@@ -116,7 +116,7 @@ object QuoteCommands : ICommandList {
                 "task" to "GET",
                 "mode" to "pos",
                 "pos" to Integer.toString(pos)))
-                .build().inputStream, StandardCharsets.UTF_8)).asJsonObject
+                .build().inputStream, StandardCharsets.UTF_8)).obj
     }
 
     private fun sendQuoteByPos(pos: Int, e: CommandEvent) {
@@ -133,7 +133,7 @@ object QuoteCommands : ICommandList {
                 .setColor(cat.color)
                 .setThumbnail(cat.img)
         for (quote in quotes) {
-            embed.addField("#${quote["id"].asString} ${quote["author"].asString}:", quote["quote"].asString, false)
+            embed.addField("#${quote["id"].str} ${quote["author"].str}:", quote["quote"].str, false)
             if (++fieldCount >= 25) {
                 ret.add(embed.build())
                 fieldCount = 0
@@ -178,8 +178,8 @@ object QuoteCommands : ICommandList {
                     "mode" to "fromto",
                     "from" to if (from.toInt() < 1) "1" else from,
                     "to" to to))
-                    .build().inputStream, StandardCharsets.UTF_8)).asJsonObject
-            createEmbeds(rep.getAsJsonArray("quotes").map(JsonElement::getAsJsonObject)).forEach(e::reply)
+                    .build().inputStream, StandardCharsets.UTF_8)).obj
+            createEmbeds(rep["quotes"].arr.map(JsonElement::obj)).forEach(e::reply)
         }
     }
 
@@ -187,7 +187,7 @@ object QuoteCommands : ICommandList {
         e.reply(EmbedBuilder()
                 .setColor(cat.color)
                 .setThumbnail(cat.img)
-                .addField("${quote["author"].asString}:", quote["quote"].asString, false)
+                .addField("${quote["author"].str}:", quote["quote"].str, false)
                 .setFooter("ID: $id", null)
                 .build()
         )

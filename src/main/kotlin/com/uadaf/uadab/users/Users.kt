@@ -5,6 +5,9 @@ import com.gt22.randomutils.Instances
 import com.gt22.randomutils.log.SimpleLog
 import com.jagrosh.jdautilities.commons.utils.FinderUtil
 import com.uadaf.uadab.UADAB
+import com.uadaf.uadab.utils.arr
+import com.uadaf.uadab.utils.obj
+import com.uadaf.uadab.utils.str
 import net.dv8tion.jda.core.entities.User
 import org.jooq.lambda.Unchecked
 import java.io.IOException
@@ -30,7 +33,7 @@ object Users {
         if (Files.exists(users)) {
             log.info("Loading users.json")
             try {
-                UADAB.parse(users).asJsonArray.forEach { e -> USERS_INFO.add(e.asJsonObject) }
+                UADAB.parse(users).arr.forEach { e -> USERS_INFO.add(e.obj) }
             } catch (e: IOException) {
                 log.fatal("Unable to load users.json")
                 log.log(e)
@@ -73,13 +76,13 @@ object Users {
     fun getReservedUser(discordUser: User): Optional<JsonObject> {
         return USERS_INFO.parallelStream()
                 .filter { u -> u.has("discord") }
-                .filter { u -> u["discord"].asString == discordUser.id }
+                .filter { u -> u["discord"].str == discordUser.id }
                 .findAny()
     }
 
     fun getReservedUser(name: String): Optional<JsonObject> {
         return USERS_INFO.parallelStream()
-                .filter { u -> u["name"].asString == name }
+                .filter { u -> u["name"].str == name }
                 .findAny()
     }
 
@@ -131,12 +134,12 @@ object Users {
         }
         val reservedUser = getReservedUser(discordUser)
         if (reservedUser.isPresent) {
-            name = reservedUser.get()["name"].asString
+            name = reservedUser.get()["name"].str
         } else {
             val reservedName = getReservedUser(name)
             if (reservedName.isPresent) {
                 val o = reservedName.get()
-                if (!o.has("discord") || o["discord"].asString != discordUser.id) {
+                if (!o.has("discord") || o["discord"].str != discordUser.id) {
                     return AuthState.RESERVED_NAME
                 }
             } else if (Classification.getClassification(name) !== Classification.IRRELEVANT) {

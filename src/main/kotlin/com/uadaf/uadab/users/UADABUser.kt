@@ -6,8 +6,7 @@ import com.google.gson.JsonPrimitive
 import com.gt22.randomutils.Instances
 import com.gt22.randomutils.log.SimpleLog
 import com.uadaf.uadab.UADAB
-import com.uadaf.uadab.utils.EmbedUtils
-import com.uadaf.uadab.utils.ImageUtils
+import com.uadaf.uadab.utils.*
 import net.dv8tion.jda.core.entities.User
 import org.jooq.lambda.Unchecked
 import java.nio.file.Files
@@ -55,12 +54,12 @@ class UADABUser internal constructor(name: String) {
         get() {
             val aliases = aliases
             val ret = ArrayList<String>(aliases.size())
-            aliases.forEach { e -> ret.add(e.asString) }
+            aliases.forEach { e -> ret.add(e.str) }
             return ret
         }
 
     val vkAuthClientId: String
-        get() = data["VKA_ID"].asString
+        get() = data["VKA_ID"].str
 
     val avatarWithClassUrl: CompletableFuture<String>
         get() = getAvatarWithClassUrl(classification)
@@ -77,9 +76,9 @@ class UADABUser internal constructor(name: String) {
     }
 
     private fun loadData(dataFile: Path) {
-        data = UADAB.parse(dataFile).asJsonObject
+        data = UADAB.parse(dataFile).obj
         if (data.has("SSN")) {
-            ssn = SSN(data["SSN"].asInt)
+            ssn = SSN(data["SSN"].int)
         } else {
             ssn = SSN.randomSSN()
             updateSSN()
@@ -87,7 +86,7 @@ class UADABUser internal constructor(name: String) {
         if (data.has("DISCORD_ID")) {
             try {
                 val bot = UADAB.bot
-                val discordUser = bot.getUserById(data["DISCORD_ID"].asString)
+                val discordUser = bot.getUserById(data["DISCORD_ID"].str)
                 var discordData: JsonObject? = data.getAsJsonObject("discord")
                 if (discordData == null) {
                     discordData = JsonObject()
@@ -98,12 +97,12 @@ class UADABUser internal constructor(name: String) {
             }
         }
         classification = if (data.has("CLASSIFICATION")) {
-            Classification.getClassification(data["CLASSIFICATION"].asString)!!
+            Classification.getClassification(data["CLASSIFICATION"].str)!!
         } else {
             Classification.getClassification(name)!!
         }
         if (data.has("ALIASES")) {
-            aliases.forEach { e -> Users.addAlias(e.asString, this) }
+            aliases.forEach { e -> Users.addAlias(e.str, this) }
         }
     }
 
@@ -111,10 +110,10 @@ class UADABUser internal constructor(name: String) {
         data = JsonObject()
         Users.getReservedUser(name).ifPresent({ info ->
             if (info.has("vka")) {
-                data.addProperty("VKA_ID", info["vka"].asString)
+                data.addProperty("VKA_ID", info["vka"].str)
             }
             if (info.has("intVal")) {
-                ssn = SSN(info["intVal"].asInt)
+                ssn = SSN(info["intVal"].int)
                 updateSSN()
             }
         })
@@ -154,7 +153,7 @@ class UADABUser internal constructor(name: String) {
     }
 
     override fun toString(): String {
-        return name + "#" + ssn
+        return "$name#$ssn"
     }
 
     companion object {
