@@ -12,7 +12,7 @@ class GuildMusicManager(manager: AudioPlayerManager) {
     /**
      * Audio player for the guild.
      */
-    val player: AudioPlayer = manager.createPlayer()
+    val player: AudioPlayer = manager.createPlayer().apply { volume = 10 }
     /**
      * Track scheduler for the player.
      */
