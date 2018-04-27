@@ -6,10 +6,7 @@ import com.gt22.randomutils.Instances
 import com.gt22.randomutils.log.SimpleLog
 import com.jagrosh.jdautilities.command.CommandClient
 import com.jagrosh.jdautilities.command.CommandClientBuilder
-import com.uadaf.uadab.command.ClassificationCommands
-import com.uadaf.uadab.command.MusicCommands
-import com.uadaf.uadab.command.QuoteCommands
-import com.uadaf.uadab.command.SystemCommands
+import com.uadaf.uadab.command.*
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.extensions.ExtensionRegistry
 import com.uadaf.uadab.users.Users
@@ -77,7 +74,7 @@ object UADAB {
                 .setGame(Game.of(Game.GameType.DEFAULT, "Type 'sudo help'"))
                 .setPrefix("sudo ")
                 .useHelpBuilder(false)
-                .addCommands(SystemCommands, ClassificationCommands, QuoteCommands, MusicCommands)
+                .addCommands(SystemCommands, ClassificationCommands, QuoteCommands, MusicCommands, MiscCommands)
                 .setEmojis("<:asset:230288765724131329>", "<:irrelevant_threat:340157734248775680>", "<:relevant_threat:340157956286840844>")
                 .build()
     }

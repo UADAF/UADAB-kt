@@ -132,8 +132,8 @@ object QuoteCommands : ICommandList {
         var embed = EmbedBuilder()
                 .setColor(cat.color)
                 .setThumbnail(cat.img)
-        for (quote in quotes) {
-            embed.addField("#${quote["id"].str} ${quote["author"].str}:", quote["quote"].str, false)
+        quotes.forEach {
+            embed.addField("#${it["id"].str} ${it["author"].str}:", it["quote"].str, false)
             if (++fieldCount >= 25) {
                 ret.add(embed.build())
                 fieldCount = 0
@@ -153,10 +153,10 @@ object QuoteCommands : ICommandList {
                 val sentQuotes = mutableSetOf<Int>()
                 val quotes = mutableListOf<JsonObject>()
                 for (i in 0 until count) {
-                    var id = Instances.getRand().nextInt(total) + 1
-                    if (sentQuotes.contains(id)) {
+                    var id: Int
+                    do {
                         id = Instances.getRand().nextInt(total) + 1
-                    }
+                    } while (sentQuotes.contains(id))
                     val rep = getQuoteByPos(id)
                     quotes.add(rep)
                     sentQuotes.add(id)

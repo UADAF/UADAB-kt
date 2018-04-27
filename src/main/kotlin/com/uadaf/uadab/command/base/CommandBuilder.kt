@@ -94,7 +94,6 @@ class CommandBuilder {
 
     fun denyFor(vararg classes: Classification): CommandBuilder {
         allowedClasses.removeAll(classes)
-        println(allowedClasses)
         return this
     }
 

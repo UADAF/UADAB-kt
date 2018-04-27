@@ -1,7 +1,6 @@
-package com.gt22.pbbot.getters
+package com.uadaf.uadab.utils.getters
 
 import com.uadaf.uadab.UADAB
-import com.uadaf.uadab.utils.getters.Wrapper
 import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.User
 import java.util.regex.Pattern

@@ -81,26 +81,33 @@ object SystemCommands : ICommandList {
             }.setAllowedClasses(EVERYONE).build(),
             command("shred/system/kernel.test", "shutdowns the bot") { e ->
                 val u = Users.of(e.author)
-                e.channel.sendMessage(EmbedUtils.create(cat.color.rgb, "Shutting down", "Goodbye, ${u.name}", u.getAvatarWithClassUrl().get())).queue({
+                e.channel.sendMessage(EmbedUtils.create(cat.color.rgb, "Shutting down", "Goodbye, ${u.name}", u.avatarWithClassUrl)).queue({
                     UADAB.bot.shutdown()
                     System.exit(0)
                 })
             }.setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _, e ->
                 val author = Users.of(e.author)
-                reply(e, RED, "Rejecting reboot", "You have no permission to reboot this system\nContacting Admin", author.getAvatarWithClassUrl())
+                reply(e, RED, "Rejecting reboot", "You have no permission to reboot this system\nContacting Admin", author.avatarWithClassUrl)
                 e.reactError()
-                Instances.getExecutor().submit(Unchecked.runnable { UADAB.contactAdmin(EmbedUtils.create(YELLOW, "Shutdown attempt detected", String.format("User '%s' tried to shutdown The Bot", author.name), author.getAvatarWithClassUrl(Classification.RELEVANT_THREAT).get())) })
+                Instances.getExecutor().submit {
+                    UADAB.contactAdmin(EmbedUtils.create(
+                            YELLOW,
+                            "Shutdown attempt detected",
+                            String.format("User '%s' tried to shutdown The Machine", author.name),
+                            author.getAvatarWithClassUrl(Classification.RELEVANT_THREAT)))
+                }
             }.setAliases("shutdown").setHidden().build()
     )
 
 
     private fun createHelpForCommand(embed: EmbedBuilder, c: AdvancedCommand, prefix: String, inline: Boolean) {
-        embed.addField("$prefix ${c.name} ${c.arguments}", c.help, inline)
-        embed.addField("Allowed for:", c.allowedFor.joinToString("\n"), false)
-        embed.addField(String.format("%s %s %s", prefix, c.name, c.arguments), c.help, inline)
-        if (c.children.isNotEmpty()) {
-            val newPrefix = prefix + " " + c.name
-            c.children.forEach { createHelpForCommand(embed, it as AdvancedCommand, newPrefix, true) }
+        with(c) {
+            embed.addField("$prefix $name $arguments", help, inline)
+            embed.addField("Allowed for:", allowedFor.stream().map(Classification::name).distinct().reduce {s1, s2 -> s1 + '\n' + s2}.get(), false)
+            if (c.children.isNotEmpty()) {
+                val newPrefix = "$prefix ${c.name}"
+                c.children.forEach { createHelpForCommand(embed, it as AdvancedCommand, newPrefix, true) }
+            }
         }
     }
 
@@ -121,11 +128,11 @@ object SystemCommands : ICommandList {
                     embed.setTitle(cat.name, null)
                 }
                 assert(embed != null) //If embed not initialized, in category init something went wrong
-                embed!!.addField(prefix + " " + cmd.getName() + " " + cmd.getArguments(), cmd.getHelp(), false)
+                embed!!.addField("$prefix ${cmd.name} ${cmd.arguments}", cmd.help, false)
             }
         }
-        if (embed != null) {
-            e.reply(embed.build())
+        embed?.let {
+            e.reply(it.build())
         }
         e.reactSuccess()
     }

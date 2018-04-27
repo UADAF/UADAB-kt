@@ -142,7 +142,7 @@ object Users {
                 if (!o.has("discord") || o["discord"].str != discordUser.id) {
                     return AuthState.RESERVED_NAME
                 }
-            } else if (Classification.getClassification(name) !== Classification.IRRELEVANT) {
+            } else if (Classification.getClassification(name, true) != null) {
                 return AuthState.RESERVED_NAME
             }
         }
@@ -151,7 +151,7 @@ object Users {
             return AuthState.NAME_ALREADY_AUTHENTICATED
         } else {
             user = UADABUser(name)
-            user.classification = Classification.getClassification(name)!!
+            user.classification = Classification.getClassification(name)
         }
         initDiscord(user, discordUser)
         return AuthState.SUCCESS

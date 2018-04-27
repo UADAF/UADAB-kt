@@ -1,20 +1,19 @@
 package com.uadaf.uadab.utils
 
-import com.gt22.randomutils.Instances
 import com.uadaf.uadab.UADAB
-import org.apache.http.client.methods.RequestBuilder
-
-import javax.imageio.ImageIO
-import java.awt.*
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.launch
+import java.awt.AlphaComposite
+import java.awt.Image
 import java.awt.image.BufferedImage
 import java.io.IOException
 import java.io.UncheckedIOException
-import java.util.HashMap
 import java.util.concurrent.CompletableFuture
+import javax.imageio.ImageIO
 
 object ImageUtils {
     private val IMAGE_CACHE: MutableMap<String, BufferedImage?> = mutableMapOf()
-    private val SCHEDULED_FUTURES: MutableMap<String, CompletableFuture<BufferedImage>> = mutableMapOf()
+    private val SCHEDULED_FUTURES: MutableMap<String, MutableList<CompletableFuture<BufferedImage>>> = mutableMapOf()
 
     fun mergeImages(img1: BufferedImage, img2: BufferedImage): BufferedImage {
 
@@ -45,14 +44,25 @@ object ImageUtils {
         val ret = CompletableFuture<BufferedImage>()
 
         if (!IMAGE_CACHE.containsKey(url)) {
-            UADAB.log.debug("Loading image " + url)
+            UADAB.log.debug("Loading image $url")
             IMAGE_CACHE[url] = null //Placeholder to send only one request
-            Instances.getExecutor().execute {
+            launch {
                 try {
-                    val read = ImageIO.read(Instances.getHttpClient().execute(RequestBuilder.get(url).build()).entity.content)
+                    val read = async {
+                        val conn = JavaHttpRequestBuilder(url).build()
+                        conn.setRequestProperty("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36")
+                        conn.setRequestProperty("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+                        try {
+                            ImageIO.read(conn.inputStream)
+                        } catch (e: IOException) {
+                            println(conn.headerFields.entries.joinToString("\n") { "${it.key} ${it.value}" })
+                            BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB)
+                        }
+                    }.await()
                     IMAGE_CACHE[url] = read
                     ret.complete(read)
-                    SCHEDULED_FUTURES.forEach { _, f -> f.complete(read) }
+                    SCHEDULED_FUTURES[url]?.forEach { it.complete(read) }
+                    SCHEDULED_FUTURES.remove(url)
                     UADAB.log.debug("Image $url loaded")
 
                 } catch (e: IOException) {
@@ -62,7 +72,7 @@ object ImageUtils {
         } else {
             val cached = IMAGE_CACHE[url]
             if (cached == null) { //Image loading in progress
-                SCHEDULED_FUTURES[url] = ret
+                SCHEDULED_FUTURES.computeIfAbsent(url, { mutableListOf() }).add(ret)
             } else {
                 ret.complete(IMAGE_CACHE[url])
             }

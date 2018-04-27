@@ -40,7 +40,7 @@ object MusicCommands : ICommandList {
             var all = false
             var noRepeat = true
             var count = 1
-            val a = args.split(" ".toRegex()).dropLastWhile(String::isEmpty)
+            val a = args.split("\\s".toRegex()).dropLastWhile(String::isEmpty)
             val resultArgs = mutableListOf<String>()
             var i = 0
             while (i < a.size) {
@@ -172,7 +172,6 @@ object MusicCommands : ICommandList {
     }
 
     private fun formatTrack(name: String): String {
-        println(name)
         val start = MUSIC_DIR.toAbsolutePath().toString().length
         val end = name.lastIndexOf('.')
         return name.replace(java.io.File.separatorChar, '/').substring(if (start == -1) 0 else start + 1, if (end == -1) name.length else end)

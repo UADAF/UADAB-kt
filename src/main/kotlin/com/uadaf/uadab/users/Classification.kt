@@ -1,16 +1,27 @@
 package com.uadaf.uadab.users
 
+import com.uadaf.uadab.utils.Boxes
+import com.uadaf.uadab.utils.EmbedUtils
+import com.uadaf.uadab.utils.ImageUtils
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.runBlocking
 import org.apache.commons.collections4.bidimap.DualHashBidiMap
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.util.*
 
-class Classification private constructor(val name: String, private val img: String, val color: Color) {
+class Classification private constructor(val name: String, val primaryColor: Color, val secondaryColor: Color = primaryColor, val color: Color = primaryColor) {
     var codename = name.toLowerCase()
+    fun getBufImg(size: Int = 200): BufferedImage {
+        return Boxes.getBox(size, size, primaryColor, secondaryColor)
+    }
+
+    fun asyncGetImgUrl(size: Int = 200) =
+            EmbedUtils.convertImgToURL("Box:;:$primaryColor:;:$secondaryColor:;:$size") { getBufImg(size) }
+
+
     fun getImg(size: Int = 200): String {
-        return if (!img.contains(".svg")) {
-            img
-        } else img + size
+        return runBlocking { asyncGetImgUrl(size).await() }
     }
 
     var role
@@ -24,18 +35,18 @@ class Classification private constructor(val name: String, private val img: Stri
     }
 
     companion object {
-        val IRRELEVANT = Classification("Irrelevant", "https://vignette3.wikia.nocookie.net/pediaofinterest/images/a/a1/S03-WhiteSquare.svg/revision/latest/scale-to-width-down/", Color.WHITE)
-        val ASSET = Classification("Asset", "https://vignette1.wikia.nocookie.net/pediaofinterest/images/a/a4/S03-YellowSquare.svg/revision/latest/scale-to-width-down/", Color.YELLOW)
-        val ANALOG_INTERFACE = Classification("Analog Interface", "https://vignette1.wikia.nocookie.net/pediaofinterest/images/2/2e/S03-BlackSquareYellowCorners.svg/revision/latest/scale-to-width-down/", Color.YELLOW)
-        val IRRELEVANT_THREAT = Classification("Irrelevant Threat", "https://vignette3.wikia.nocookie.net/pediaofinterest/images/d/d2/S03-WhiteSquareRedCorners.svg/revision/latest/scale-to-width-down/", Color.RED)
-        val RELEVANT_THREAT = Classification("Relevant Threat", "https://vignette4.wikia.nocookie.net/pediaofinterest/images/4/4c/S03-RedSquare.svg/revision/latest/scale-to-width-down/", Color.RED)
-        val CATALYST = Classification("Catalyst", "https://vignette2.wikia.nocookie.net/pediaofinterest/images/2/2e/S03-BlueSquare.svg/revision/latest/scale-to-width-down/", Color.BLUE)
-        val RELEVANT_ONE = Classification("Relevant-One", "https://vignette3.wikia.nocookie.net/pediaofinterest/images/a/a3/S05-BlueSquareWhiteCorners.svg/revision/latest/scale-to-width-down/", Color.BLUE)
-        val UNKNOWN = Classification("Unknown", "https://cdn.discordapp.com/attachments/197699632841752576/338403812576329728/classes.png", Color.GRAY)
+        val IRRELEVANT = Classification("Irrelevant", Color.WHITE)
+        val ASSET = Classification("Asset", Color.YELLOW)
+        val ANALOG_INTERFACE = Classification("Analog Interface", Color.YELLOW, Color.BLACK)
+        val IRRELEVANT_THREAT = Classification("Irrelevant Threat", Color.WHITE, Color.RED, Color.RED)
+        val RELEVANT_THREAT = Classification("Relevant Threat", Color.RED)
+        val CATALYST = Classification("Catalyst", Color.BLUE)
+        val RELEVANT_ONE = Classification("Relevant-One", Color.WHITE, Color.BLUE, Color.BLUE)
+        val UNKNOWN = Classification("Unknown", Color.GRAY)
 
         //Hidden classes
-        val ADMIN = Classification("Asset", "https://vignette1.wikia.nocookie.net/pediaofinterest/images/a/a4/S03-YellowSquare.svg/revision/latest/scale-to-width-down/", Color.YELLOW)
-        val SYSTEM = Classification("Unknown", "https://cdn.discordapp.com/attachments/197699632841752576/338403812576329728/classes.png", Color.GRAY)
+        val ADMIN = Classification("Asset", Color.YELLOW)
+        val SYSTEM = Classification("Unknown", Color.GRAY)
 
         private val CLASS_MAP = HashMap<String, Classification>()
         private val ROLE_MAP = DualHashBidiMap<Classification, String>()
@@ -73,7 +84,7 @@ class Classification private constructor(val name: String, private val img: Stri
             }
         }
 
-        fun getClassification(uname: String, strict: Boolean = false): Classification? {
+        fun getClassification(uname: String, strict: Boolean): Classification? {
             val name = uname.toLowerCase()
             if (CLASS_MAP.containsKey(name)) {
                 return CLASS_MAP[name]
@@ -84,6 +95,13 @@ class Classification private constructor(val name: String, private val img: Stri
                 }
             }
             return if (strict) null else IRRELEVANT
+        }
+
+        /**
+         * Non-Strict classification, defaulted to irrelevant, so can't be null
+         */
+        fun getClassification(uname: String): Classification {
+            return getClassification(uname, false)!!
         }
 
         fun getClassificationByRole(role: String): Classification? {

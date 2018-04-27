@@ -46,9 +46,10 @@ object MusicHandler {
     }
 
     fun playlistSize(guild: Guild): Int {
-        val gau = getGuildAudioPlayer(guild)
-        val isPlaying = gau.player.playingTrack != null
-        return gau.scheduler.size() + (if(isPlaying) 1 else 0)
+        with(getGuildAudioPlayer(guild)) {
+            val isPlaying = player.playingTrack != null
+            return scheduler.size() + (if (isPlaying) 1 else 0)
+        }
     }
 
     fun pause(guild: Guild) {
@@ -60,19 +61,21 @@ object MusicHandler {
     }
 
     fun reset(guild: Guild) {
-        val gau = getGuildAudioPlayer(guild)
-        gau.scheduler.clear()
-        gau.player.stopTrack()
+        with(getGuildAudioPlayer(guild)) {
+            scheduler.clear()
+            player.stopTrack()
+        }
     }
 
     fun skip(id: Int, guild: Guild): AudioTrack {
-        val gau = getGuildAudioPlayer(guild)
-        if(id == 0) {
-            val cur = gau.player.playingTrack
-            gau.scheduler.nextTrack()
-            return cur
+        with(getGuildAudioPlayer(guild)) {
+            if (id == 0) {
+                val cur = player.playingTrack
+                scheduler.nextTrack()
+                return cur
+            }
+            return scheduler.skipTrack(id - 1)
         }
-        return getGuildAudioPlayer(guild).scheduler.skipTrack(id - 1)
     }
 
     fun currentTrack(guild: Guild): AudioTrack {

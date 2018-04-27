@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   version="1.1"
+   width="1096"
+   height="1096"
+   id="svg3023">
+  <defs
+     id="defs3025" />
+  <metadata
+     id="metadata3028">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title/>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     transform="translate(-52,-52)"
+     id="layer13"
+     style="display:inline">
+    <path
+       d="m 172,100 423,0"
+       id="path4883"
+       style="fill:none;stroke:%SECONDARY_COLOR%;stroke-width:18;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:47, 47;stroke-dashoffset:47" />
+    <use
+       transform="matrix(-1,0,0,1,1200,0)"
+       id="use4885"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4883" />
+    <use
+       transform="matrix(0,-1,1,0,0,1200)"
+       id="use5020"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4883" />
+    <use
+       transform="matrix(0,1,1,0,0,0)"
+       id="use5064"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4883" />
+    <use
+       transform="matrix(-1,0,0,-1,1200,1200)"
+       id="use5109"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4883" />
+    <use
+       transform="matrix(1,0,0,-1,0,1200)"
+       id="use5111"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4883" />
+    <use
+       transform="matrix(0,1,-1,0,1200,0)"
+       id="use5113"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4883" />
+    <use
+       transform="matrix(0,-1,-1,0,1200,1200)"
+       id="use5115"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4883" />
+  </g>
+  <g
+     transform="translate(-52,-52)"
+     id="layer12"
+     style="display:inline">
+    <path
+       d="m 600,91 0,65"
+       id="path4758"
+       style="fill:none;stroke:%PRIMARY_COLOR%;stroke-width:30;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+    <use
+       transform="matrix(0,-1,1,0,0,1200)"
+       id="use4838"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4758" />
+    <use
+       transform="matrix(-1,0,0,-1,1200,1200)"
+       id="use4840"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4758" />
+    <use
+       transform="matrix(0,1,-1,0,1200,0)"
+       id="use4842"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4758" />
+  </g>
+  <g
+     transform="translate(-52,-52)"
+     id="layer6"
+     style="display:inline">
+    <path
+       d="M 114,82 C 96.326888,82 82,96.326888 82,114 l 0,9 0,44 36,0 0,-44 c 0,-2.76142 2.23858,-5 5,-5 l 44,0 0,-36 -44,0 -9,0 z"
+       id="path4528"
+       style="fill:%PRIMARY_COLOR%;fill-opacity:1;stroke:none" />
+    <use
+       transform="matrix(0,1,-1,0,1200,0)"
+       id="use4549"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4528" />
+    <use
+       transform="matrix(0,-1,1,0,0,1200)"
+       id="use4547"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4528" />
+    <use
+       transform="matrix(-1,0,0,-1,1200,1200)"
+       id="use4551"
+       x="0"
+       y="0"
+       width="1200"
+       height="1200"
+       xlink:href="#path4528" />
+  </g>
+</svg>

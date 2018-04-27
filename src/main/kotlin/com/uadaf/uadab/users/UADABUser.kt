@@ -3,16 +3,15 @@ package com.uadaf.uadab.users
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import com.gt22.randomutils.Instances
 import com.gt22.randomutils.log.SimpleLog
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.utils.*
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.runBlocking
 import net.dv8tion.jda.core.entities.User
-import org.jooq.lambda.Unchecked
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
-import java.util.concurrent.CompletableFuture
 import kotlin.properties.Delegates
 
 class UADABUser internal constructor(name: String) {
@@ -20,7 +19,6 @@ class UADABUser internal constructor(name: String) {
         if (prev != "") {
             val dataFile = Users.getUserFile(prev)
             if (Files.exists(dataFile)) {
-                println(new)
                 Files.move(dataFile, Users.getUserFile(new))
             }
             Users.rename(prev, new)
@@ -36,6 +34,9 @@ class UADABUser internal constructor(name: String) {
         set(classification) {
             field = classification
             data.addProperty("CLASSIFICATION", classification.codename)
+            if(awcuDelegate.isInitialized()) { //Only update cached image if it has been loaded
+                avatarWithClassUrl = getAvatarWithClassUrl(classification)
+            }
         }
 
     private val aliases: JsonArray
@@ -58,11 +59,12 @@ class UADABUser internal constructor(name: String) {
             return ret
         }
 
-    val vkAuthClientId: String
+    inline val vkAuthClientId: String
         get() = data["VKA_ID"].str
 
-    val avatarWithClassUrl: CompletableFuture<String>
-        get() = getAvatarWithClassUrl(classification)
+    private val awcuDelegate = MutableLazy { getAvatarWithClassUrl() }
+    var avatarWithClassUrl: String by awcuDelegate
+        private set
 
     init {
         this.name = name
@@ -73,6 +75,13 @@ class UADABUser internal constructor(name: String) {
             loadDefault()
         }
         log.debug(String.format("Creating TMBotUser %s", this))
+    }
+
+    //Update cached image if avatar changed
+    fun onAvatarUpdate() {
+        if(awcuDelegate.isInitialized()) { //Only update cached image if it has been loaded
+            avatarWithClassUrl = getAvatarWithClassUrl()
+        }
     }
 
     private fun loadData(dataFile: Path) {
@@ -97,9 +106,9 @@ class UADABUser internal constructor(name: String) {
             }
         }
         classification = if (data.has("CLASSIFICATION")) {
-            Classification.getClassification(data["CLASSIFICATION"].str)!!
+            Classification.getClassification(data["CLASSIFICATION"].str)
         } else {
-            Classification.getClassification(name)!!
+            Classification.getClassification(name)
         }
         if (data.has("ALIASES")) {
             aliases.forEach { e -> Users.addAlias(e.str, this) }
@@ -140,17 +149,17 @@ class UADABUser internal constructor(name: String) {
         }
     }
 
-    fun getAvatarWithClassUrl(classification: Classification = this.classification): CompletableFuture<String> {
-        val ret = CompletableFuture<String>()
-        Instances.getExecutor().submit {
-            ret.complete(EmbedUtils.convertImgToURL(Unchecked.supplier {
+    fun asyncGetAvatarWithClassUrl(classification: Classification = this.classification): Deferred<String> =
+            EmbedUtils.convertImgToURL("${discordUser.effectiveAvatarUrl}:;:;:${classification.name}") {
                 val avatar = ImageUtils.readImg(discordUser.effectiveAvatarUrl).get()
-                val frame = ImageUtils.readImg(classification.getImg(avatar?.width ?: 200)).get()
+                val frame = classification.getBufImg(avatar?.width ?: 200)
                 ImageUtils.mergeImages(avatar, frame)
-            }, "${discordUser.effectiveAvatarUrl}:;:;:${classification.name}"))
-        }
-        return ret
+            }
+
+    fun getAvatarWithClassUrl(classification: Classification = this.classification) = runBlocking {
+        asyncGetAvatarWithClassUrl(classification).await()
     }
+
 
     override fun toString(): String {
         return "$name#$ssn"

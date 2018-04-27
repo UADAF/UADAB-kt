@@ -9,7 +9,8 @@ import com.uadaf.uadab.users.Users
 typealias CommandAction = (CommandEvent) -> Unit
 typealias CommandDeniedAction = (Set<Classification>, CommandEvent) -> Unit
 
-open class AdvancedCommand(private val action: CommandAction, private val onDenied: CommandDeniedAction, val allowedFor: Set<Classification>, val hidden: Boolean) : Command() {
+open class AdvancedCommand(private val action: CommandAction, private val onDenied: CommandDeniedAction,
+                           val allowedFor: Set<Classification>, val hidden: Boolean) : Command() {
 
     override fun execute(e: CommandEvent) {
         val user = Users.of(e.author)

@@ -5,9 +5,10 @@ import com.gt22.randomutils.Instances
 class SSN internal constructor(val intVal: Int) {
 
     fun getSSNString(redacted: Boolean): String {
-        val ssn = CharArray(9)
+
         val ssns = Integer.toString(this.intVal)
         val zeros = 9 - ssns.length
+        val ssn = CharArray(9) { i -> if (i < zeros) '0' else ssns[i - zeros]}
         for (i in 0 until zeros) {
             ssn[i] = '0'
         }
@@ -26,15 +27,7 @@ class SSN internal constructor(val intVal: Int) {
     companion object {
 
         internal fun randomSSN(): SSN {
-            val ssnc = CharArray(9)
-            for (i in ssnc.indices) {
-                ssnc[i] = ('0'.toInt() + Instances.getRand().nextInt(10)).toChar()
-            }
-            var ssn = 0
-            for (i in ssnc.indices) {
-                ssn += Character.digit(ssnc[i], 10) * Math.pow(10.0, (8 - i).toDouble()).toInt()
-            }
-            return SSN(ssn)
+            return SSN(Instances.getRand().ints(9, 0, 10).reduce {i1, i2 -> i1 * 10 + i2}.asInt)
         }
     }
 }

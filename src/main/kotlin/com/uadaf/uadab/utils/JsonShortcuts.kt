@@ -4,23 +4,23 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 
-val JsonElement.str: String
+inline val JsonElement.str: String
     get() = asString
 
-val JsonElement.bln: Boolean
+inline val JsonElement.bln: Boolean
     get() = asBoolean
 
-val JsonElement.int: Int
+inline val JsonElement.int: Int
     get() = asInt
 
-val JsonElement.obj: JsonObject
+inline val JsonElement.obj: JsonObject
     get() = asJsonObject
 
-val JsonElement.arr: JsonArray
+inline val JsonElement.arr: JsonArray
     get() = asJsonArray
 
-val JsonElement.flt: Float
+inline val JsonElement.flt: Float
     get() = asFloat
 
-val JsonElement.dbl: Double
+inline val JsonElement.dbl: Double
     get() = asDouble
