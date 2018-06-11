@@ -3,10 +3,12 @@ package com.uadaf.uadab.users
 import com.google.gson.JsonObject
 import com.gt22.randomutils.Instances
 import com.gt22.randomutils.log.SimpleLog
+import com.jagrosh.jdautilities.command.CommandEvent
 import com.jagrosh.jdautilities.commons.utils.FinderUtil
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.utils.arr
 import com.uadaf.uadab.utils.obj
+import com.uadaf.uadab.utils.set
 import com.uadaf.uadab.utils.str
 import net.dv8tion.jda.core.entities.User
 import org.jooq.lambda.Unchecked
@@ -86,32 +88,30 @@ object Users {
                 .findAny()
     }
 
-    fun of(discordUser: User): UADABUser {
+    operator fun get(name: String): UADABUser? = USERS_BY_NAME[name] ?: USERS_BY_ALIAS[name]
+
+    operator fun get(ssn: Int): UADABUser? = USERS_BY_SSN[ssn]
+
+    operator fun get(discordUser: User): UADABUser {
         if(!USERS_BY_DISCORD.containsKey(discordUser)) {
             auth(discordUser)
         }
         return USERS_BY_DISCORD[discordUser]!!
     }
 
-    fun of(name: String): UADABUser? {
-        return USERS_BY_NAME[name] ?: USERS_BY_ALIAS[name]
-    }
+    operator fun get(e: CommandEvent): UADABUser = get(e.author)
 
-
-    fun of(ssn: Int): UADABUser? {
-        return USERS_BY_SSN[ssn]
-    }
 
     fun lookup(info: String): UADABUser? {
-        var user: UADABUser? = of(info)
+        var user: UADABUser? = this[info]
         if(user == null) {
             val ssn = info.toIntOrNull()
-            if(ssn != null) user = of(ssn)
+            if(ssn != null) user = this[ssn]
         }
         if(user == null) {
             val discordUser: List<User> = FinderUtil.findUsers(info, UADAB.bot)
             if (discordUser.size == 1)
-                user = of(discordUser[0])
+                user = this[discordUser[0]]
         }
         return user
     }
@@ -160,8 +160,8 @@ object Users {
     private fun initDiscord(user: UADABUser, discordUser: User) {
         val data = JsonObject()
         user.discordUser = discordUser
-        user.data.add("discord", data)
-        user.data.addProperty("DISCORD_ID", discordUser.id)
+        user.data["discord"] = data
+        user.data["DISCORD_ID"] = discordUser.id
         mapUser(user)
         UADAB.bot.getMutualGuilds(discordUser).stream()
                 .map { it.getMember(discordUser) }

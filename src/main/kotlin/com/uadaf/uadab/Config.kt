@@ -1,3 +1,5 @@
+@file:Suppress("PropertyName")
+
 package com.uadaf.uadab
 
 class Config {
@@ -12,5 +14,4 @@ class Config {
     lateinit var CO_OWNERS: Array<String>
     lateinit var QUOTER_URL: String
     lateinit var QUOTER_KEY: String
-
 }

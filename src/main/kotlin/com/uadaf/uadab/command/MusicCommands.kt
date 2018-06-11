@@ -21,11 +21,7 @@ object MusicCommands : ICommandList {
 
     private val MUSIC_DIR = Paths.get(UADAB.config.MUSIC_DIR)
     private val playlistTimeFormat = SimpleDateFormat("HH:mm:ss")
-    val cat = AdvancedCategory("Music", Color(0xAFEBF3), "http://52.48.142.75/images/an.png")
-
-    override fun getCategory(): AdvancedCategory {
-        return cat
-    }
+    override val cat = AdvancedCategory("Music", Color(0xAFEBF3), "http://52.48.142.75/images/an.png")
 
     /**
      * All music commands are bound to guilds

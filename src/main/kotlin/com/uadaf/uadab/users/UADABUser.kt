@@ -8,7 +8,7 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.utils.*
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.runBlocking
-import net.dv8tion.jda.core.entities.User
+import net.dv8tion.jda.core.entities.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
@@ -33,7 +33,7 @@ class UADABUser internal constructor(name: String) {
     var classification: Classification = Classification.IRRELEVANT
         set(classification) {
             field = classification
-            data.addProperty("CLASSIFICATION", classification.codename)
+            data["CLASSIFICATION"] = classification.codename
             if(awcuDelegate.isInitialized()) { //Only update cached image if it has been loaded
                 avatarWithClassUrl = getAvatarWithClassUrl(classification)
             }
@@ -44,7 +44,7 @@ class UADABUser internal constructor(name: String) {
             val aliases: JsonArray
             if (!data.has("ALIASES")) {
                 aliases = JsonArray()
-                data.add("ALIASES", aliases)
+                data["ALIASES"] = aliases
             } else {
                 aliases = data.getAsJsonArray("ALIASES")
             }
@@ -84,6 +84,13 @@ class UADABUser internal constructor(name: String) {
         }
     }
 
+    fun audioChannel(): VoiceChannel? =
+        discordUser.mutualGuilds
+                .map { it.getMember(discordUser) }
+                .map(Member::getVoiceState)
+                .map(VoiceState::getAudioChannel).last() as VoiceChannel?
+
+
     private fun loadData(dataFile: Path) {
         data = UADAB.parse(dataFile).obj
         if (data.has("SSN")) {
@@ -99,7 +106,7 @@ class UADABUser internal constructor(name: String) {
                 var discordData: JsonObject? = data.getAsJsonObject("discord")
                 if (discordData == null) {
                     discordData = JsonObject()
-                    data.add("discord", discordData)
+                    data["discord"] = discordData
                 }
                 this.discordUser = discordUser
             } catch (e: UninitializedPropertyAccessException) {
@@ -117,15 +124,15 @@ class UADABUser internal constructor(name: String) {
 
     private fun loadDefault() {
         data = JsonObject()
-        Users.getReservedUser(name).ifPresent({ info ->
+        Users.getReservedUser(name).ifPresent { info ->
             if (info.has("vka")) {
-                data.addProperty("VKA_ID", info["vka"].str)
+                data["VKA_ID"] = info["vka"]
             }
             if (info.has("intVal")) {
                 ssn = SSN(info["intVal"].int)
                 updateSSN()
             }
-        })
+        }
         if (!data.has("intVal")) {
             ssn = SSN.randomSSN()
         }

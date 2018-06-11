@@ -10,7 +10,7 @@ import java.util.*
  * This class schedules tracks for the audio player. It contains the queue of tracks.
  */
 class TrackScheduler(private val player: AudioPlayer) : AudioEventAdapter() {
-    private val queue: LinkedList<AudioTrack> = LinkedList()
+    val queue: LinkedList<AudioTrack> = LinkedList()
 
     /**
      * Add the next track to queue or play right away if nothing is in the queue.

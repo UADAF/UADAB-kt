@@ -4,8 +4,8 @@ import java.util.Optional
 
 class Wrapper<T: Any> {
 
-    private lateinit var single: T
-    private lateinit var multi: List<T>
+    private var single: T? = null
+    private var multi: List<T> = emptyList()
     lateinit var state: WrapperState
         private set
 
@@ -16,7 +16,7 @@ class Wrapper<T: Any> {
         NONE
     }
 
-    constructor() {
+    init {
         none()
     }
 

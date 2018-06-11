@@ -21,12 +21,9 @@ import java.util.regex.Pattern
 
 object QuoteCommands : ICommandList {
 
-    val cat = AdvancedCategory("Quotes", Color(0x434BAA), "http://52.48.142.75/images/quote_.png")
+    override val cat = AdvancedCategory("Quotes", Color(0x434BAA), "http://52.48.142.75/images/quote_.png")
     private val NFENumberExtract = Pattern.compile("For input string: \"(.*)\"")
 
-    override fun getCategory(): AdvancedCategory {
-        return cat
-    }
 
     private val totalQuotes: Int
         get() {

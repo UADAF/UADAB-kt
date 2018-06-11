@@ -16,6 +16,7 @@ object ExtensionRegistry {
     fun init() {
         Spark.port(8080)
         registerExtension(Web)
+        registerExtension(Alerter)
         Spark.init()
     }
 

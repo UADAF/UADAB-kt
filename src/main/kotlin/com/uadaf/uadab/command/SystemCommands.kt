@@ -7,20 +7,23 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.AdvancedCommand
 import com.uadaf.uadab.command.base.ICommandList
+import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.users.ADMIN_OR_INTERFACE
 import com.uadaf.uadab.users.Classification
 import com.uadaf.uadab.users.EVERYONE
 import com.uadaf.uadab.users.Users
 import com.uadaf.uadab.utils.EmbedUtils
+import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
-import org.jooq.lambda.Unchecked
 import java.awt.Color
-import java.awt.Color.*
+import java.awt.Color.RED
+import java.awt.Color.YELLOW
+import java.util.concurrent.TimeUnit
 
 object SystemCommands : ICommandList {
-    private val cat: AdvancedCategory = AdvancedCategory("System", Color(0x5E5E5E), "http://52.48.142.75/images/gear.png")
-    override fun getCategory(): AdvancedCategory = cat
+    override val cat: AdvancedCategory = AdvancedCategory("System", Color(0x5E5E5E), "http://52.48.142.75/images/gear.png")
 
 
     override fun init(): Array<Command> = arrayOf(
@@ -32,15 +35,20 @@ object SystemCommands : ICommandList {
                 if (e.args == UADAB.claimCode?.toString()) {
                     UADAB.claimCode = null
                     println("Admin found. Invalidating claim code")
-                    val user = Users.of(e.author)
+                    val user = Users[e]
                     user.classification = Classification.ADMIN
                     user.name = "Admin"
                     reply(e, Classification.ADMIN.color, "Can You Hear Me?", "Hello, Admin", user.avatarWithClassUrl)
                 }
             }.setHidden().build(),
             command("asd", "Bot joins your channel") { e ->
-                e.guild.audioManager.openAudioConnection(e.member.voiceState.channel)
+                val ch = e.member.voiceState.channel
+                e.guild.audioManager.openAudioConnection(ch)
                 e.reactSuccess()
+                launch {
+                    delay(2, TimeUnit.SECONDS)
+                    MusicHandler.loadSingle("cyhm.mp3", e.guild, noRepeat = false, addBefore = true)
+                }
             }.setGuildOnly(true).setBotPermissions(Permission.VOICE_CONNECT).setAliases("фыв").build(),
             command("dsa", "Bot leaves your channel") { e ->
                 val user = e.member.voiceState.channel
@@ -68,7 +76,7 @@ object SystemCommands : ICommandList {
                         val c = cmd.get()
                         val prefix = UADAB.commands.prefix
                         val embed = EmbedBuilder()
-                                .setTitle("Command: " + c.name, null)
+                                .setTitle("Command: ${c.name}", null)
                                 .setColor((c.category as AdvancedCategory).color)
                         createHelpForCommand(embed, c as AdvancedCommand, prefix, false)
                         e.reply(embed.build())
@@ -80,13 +88,13 @@ object SystemCommands : ICommandList {
                 }
             }.setAllowedClasses(EVERYONE).build(),
             command("shred/system/kernel.test", "shutdowns the bot") { e ->
-                val u = Users.of(e.author)
-                e.channel.sendMessage(EmbedUtils.create(cat.color.rgb, "Shutting down", "Goodbye, ${u.name}", u.avatarWithClassUrl)).queue({
+                val u = Users[e]
+                e.channel.sendMessage(EmbedUtils.create(cat.color.rgb, "Shutting down", "Goodbye, ${u.name}", u.avatarWithClassUrl)).queue {
                     UADAB.bot.shutdown()
                     System.exit(0)
-                })
+                }
             }.setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _, e ->
-                val author = Users.of(e.author)
+                val author = Users[e]
                 reply(e, RED, "Rejecting reboot", "You have no permission to reboot this system\nContacting Admin", author.avatarWithClassUrl)
                 e.reactError()
                 Instances.getExecutor().submit {

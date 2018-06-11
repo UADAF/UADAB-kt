@@ -11,7 +11,6 @@ import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.entities.TextChannel
-import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.StatusChangeEvent
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent
@@ -51,7 +50,7 @@ object UADABEventListener : ListenerAdapter() {
     override fun onReady(e: ReadyEvent) {
         UADAB.initBot(e.jda)
         Users.totalAuth(e.jda.users)
-        if (Users.of("Admin") == null) {
+        if (Users["Admin"] == null) {
             UADAB.claimCode = UUID.randomUUID()
             println("No admin found. Issuing claim code: ${UADAB.claimCode}")
         }
@@ -65,7 +64,7 @@ object UADABEventListener : ListenerAdapter() {
         with(e) {
             val role = e.roles.first()
             Classification.getClassificationByRole(role.name)?.let { cls ->
-                val user = Users.of(user)
+                val user = Users[user]
                 if (cls != user.classification) {
                     user.classification = cls
                     Instances.getExecutor().submit {
@@ -85,7 +84,7 @@ object UADABEventListener : ListenerAdapter() {
         with(e) {
             val role = roles.first()
             Classification.getClassificationByRole(role.name)?.let { cls ->
-                val user = Users.of(user)
+                val user = Users[user]
                 user.classification = Classification.IRRELEVANT
                 Instances.getExecutor().submit {
                     guild.defaultChannel?.sendSelfDeletingMessage(EmbedUtils.create(
@@ -102,7 +101,7 @@ object UADABEventListener : ListenerAdapter() {
     override fun onGuildMemberJoin(e: GuildMemberJoinEvent) {
         with(e) {
             if (guild.getMember(jda.selfUser).hasPermission(Permission.MANAGE_ROLES)) {
-                val user = Users.of(user)
+                val user = Users[user]
                 val classification = user.classification
                 guild.getRolesByName(classification.role, false).firstOrNull()?.let { role ->
                     member.roles.add(role)
@@ -120,6 +119,6 @@ object UADABEventListener : ListenerAdapter() {
     }
 
     override fun onUserAvatarUpdate(e: UserAvatarUpdateEvent) {
-        Users.of(e.user).onAvatarUpdate()
+        Users[e.user].onAvatarUpdate()
     }
 }

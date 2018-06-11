@@ -18,7 +18,7 @@ import java.util.stream.Collectors
 
 object MusicHandler {
 
-    private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
+    val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
 
     init {
@@ -27,7 +27,7 @@ object MusicHandler {
     }
 
     @Synchronized
-    private fun getGuildAudioPlayer(guild: Guild): GuildMusicManager {
+    fun getGuildAudioPlayer(guild: Guild): GuildMusicManager {
         val guildId = guild.idLong
         var musicManager = musicManagers[guildId]
 
@@ -97,7 +97,7 @@ object MusicHandler {
         UNKNOWN
     }
 
-    private fun loadSingle(file: String, guild: Guild, count: Int = 1, noRepeat: Boolean = true): Pair<LoadResult, String?> {
+    fun loadSingle(file: String, guild: Guild, count: Int = 1, noRepeat: Boolean = true, addBefore: Boolean = false): Pair<LoadResult, String?> {
         var nr = noRepeat
         if(count > 1) nr = false //No repeat and count > 1 for single track is invalid
         var result: LoadResult? = null
@@ -115,8 +115,16 @@ object MusicHandler {
                     return
                 }
                 result = LoadResult.SUCCESS
-                for(i in 0 until count) {
-                    player.scheduler.queue(track)
+                if(addBefore) {
+                    player.player.playingTrack?.let(player.scheduler.queue::addFirst)
+                    for(i in 1..count) {
+                        player.scheduler.queue.addFirst(track)
+                    }
+                    player.scheduler.nextTrack()
+                } else {
+                    for (i in 1..count) {
+                        player.scheduler.queue(track)
+                    }
                 }
             }
 

@@ -12,8 +12,7 @@ import java.io.File
 import javax.imageio.ImageIO
 
 object MiscCommands : ICommandList {
-    val cat = AdvancedCategory("Misc", Color(0x95a3a6), "http://52.48.142.75/images/math_compass.png")
-    override fun getCategory() = cat
+    override val cat = AdvancedCategory("Misc", Color(0x95a3a6), "http://52.48.142.75/images/math_compass.png")
 
     override fun init(): Array<Command> {
         return arrayOf(command("box", "Generate Machine-Box") {

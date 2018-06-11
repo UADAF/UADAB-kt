@@ -9,10 +9,6 @@ class SSN internal constructor(val intVal: Int) {
         val ssns = Integer.toString(this.intVal)
         val zeros = 9 - ssns.length
         val ssn = CharArray(9) { i -> if (i < zeros) '0' else ssns[i - zeros]}
-        for (i in 0 until zeros) {
-            ssn[i] = '0'
-        }
-        ssns.toCharArray(ssn, zeros, 0, ssns.length)
         return if (redacted) {
             String.format("XXX-XX-%c%c%c%c", ssn[5], ssn[6], ssn[7], ssn[8])
         } else {

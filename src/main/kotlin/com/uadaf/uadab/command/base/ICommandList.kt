@@ -7,12 +7,11 @@ import java.awt.Color
 
 
 interface ICommandList {
-
-    fun getCategory(): AdvancedCategory
+    val cat: AdvancedCategory
     fun init(): Array<Command>
 
     fun command(name: String, help: String, action: (CommandEvent) -> Unit): CommandBuilder {
-        return CommandBuilder().setName(name).setHelp(help).setAction(action).setCategory(getCategory())
+        return CommandBuilder().setName(name).setHelp(help).setAction(action).setCategory(cat)
     }
 
     fun reply(e: CommandEvent, color: Color, title: String, message: String, image: String? = null) {

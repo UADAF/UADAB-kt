@@ -24,10 +24,7 @@ import java.awt.Color.YELLOW
 import java.util.regex.Pattern
 
 object ClassificationCommands : ICommandList {
-    val cat = AdvancedCategory("Classification", Color(0x204020), Classification.UNKNOWN.getImg())
-    override fun getCategory(): AdvancedCategory {
-        return cat
-    }
+    override val cat = AdvancedCategory("Classification", Color(0x204020), Classification.UNKNOWN.getImg())
 
     private val levelSet = Pattern.compile("^(.+):(\\d+)$")
     private val classSet = Pattern.compile("^(.+):(.+)$")
@@ -35,7 +32,7 @@ object ClassificationCommands : ICommandList {
     override fun init(): Array<Command> {
         return arrayOf(command("monitor", "Displays info about user") { e ->
             val usr = getUser(e.args, e) ?: return@command
-            val author = Users.of(e.author)
+            val author = Users[e]
 
             val cls = usr.classification
             val shouldContact = (cls == Classification.ADMIN || cls == Classification.SYSTEM) && (author.classification != Classification.ADMIN && author.classification != Classification.ANALOG_INTERFACE)
@@ -107,10 +104,10 @@ object ClassificationCommands : ICommandList {
             usr.classification = classification
             reply(e, classification.color, "Success", "Classification of ${usr.name} changed to ${classification.name}", usr.avatarWithClassUrl)
             e.reactSuccess()
-        }.setArguments("%user%:%class%").setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied({ _, e ->
-            reply(e, RED, "Permission denied", "Only Admin or Analog Interface can change classifications", Users.of(e.author).avatarWithClassUrl)
+        }.setArguments("%user%:%class%").setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _, e ->
+            reply(e, RED, "Permission denied", "Only Admin or Analog Interface can change classifications", Users[e].avatarWithClassUrl)
             e.reactWarning()
-        }).build(), command("alias", "Add or remove alias for user") { e ->
+        }.build(), command("alias", "Add or remove alias for user") { e ->
             reply(e, RED, "Invalid command", "User 'alias add' or 'alias remove'", Classification.IRRELEVANT.getImg())
             e.reactWarning()
         }.setChildren(command("add", "Adds alias") { e ->
@@ -131,10 +128,10 @@ object ClassificationCommands : ICommandList {
                     usr.removeAlias(e.args)
                     reply(e, usr.classification.color, "Success", "Removed alias '${e.args}' from user '${usr.name}'.", usr.avatarWithClassUrl)
                     e.reactSuccess()
-                }.setArguments("%alias%").build()).setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied({ _, e ->
-            e.reply(EmbedUtils.create(RED, "Permission denied", "Only Admin or Analog Interface can change aliases", Users.of(e.author).avatarWithClassUrl))
+                }.setArguments("%alias%").build()).setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _, e ->
+            e.reply(EmbedUtils.create(RED, "Permission denied", "Only Admin or Analog Interface can change aliases", Users[e].avatarWithClassUrl))
             e.reactWarning()
-        }).setArguments("(add %user%:%alias%)|(remove %alias%)").build())
+        }.setArguments("(add %user%:%alias%)|(remove %alias%)").build())
     }
 
 
@@ -144,9 +141,9 @@ object ClassificationCommands : ICommandList {
             ssn += Integer.parseInt(name.substring(0, 3)) * 1000000
             ssn += Integer.parseInt(name.substring(4, 6)) * 10000
             ssn += Integer.parseInt(name.substring(7))
-            return Users.of(ssn)
+            return Users[ssn]
         }
-        var ret = Users.of(name)
+        var ret = Users[name]
         if (ret == null) {
             val user = Getters.getUser(name)
             if (user.state === Wrapper.WrapperState.NONE) {
@@ -160,7 +157,7 @@ object ClassificationCommands : ICommandList {
                 return null
             }
 
-            ret = Users.of(user.getSingle().get())
+            ret = Users[user.getSingle().get()]
         }
         return ret
     }

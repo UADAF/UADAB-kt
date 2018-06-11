@@ -13,7 +13,7 @@ open class AdvancedCommand(private val action: CommandAction, private val onDeni
                            val allowedFor: Set<Classification>, val hidden: Boolean) : Command() {
 
     override fun execute(e: CommandEvent) {
-        val user = Users.of(e.author)
+        val user = Users[e]
         if (allowedFor.contains(user.classification)) {
             try {
                 action(e)
