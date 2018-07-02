@@ -1,6 +1,8 @@
 package com.uadaf.uadab
 
 import com.gt22.randomutils.Instances
+import com.uadaf.uadab.command.SystemCommands
+import com.uadaf.uadab.users.ADMIN_OR_INTERFACE
 import com.uadaf.uadab.users.Classification
 import com.uadaf.uadab.users.Users
 import com.uadaf.uadab.utils.EmbedUtils
@@ -8,17 +10,22 @@ import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.Permission
+import net.dv8tion.jda.core.audit.ActionType
 import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.entities.TextChannel
+import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.StatusChangeEvent
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
+import net.dv8tion.jda.core.events.guild.member.GuildMemberNickChangeEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleRemoveEvent
 import net.dv8tion.jda.core.events.user.UserAvatarUpdateEvent
+import net.dv8tion.jda.core.events.user.UserNameUpdateEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
+import java.awt.Color
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -36,10 +43,44 @@ object UADABEventListener : ListenerAdapter() {
         }
     }
 
+    override fun onGuildMemberNickChange(e: GuildMemberNickChangeEvent) {
+        if(e.user == UADAB.bot.selfUser && e.newNick !in SystemIntegrityProtection.allowedNicks) {
+            val guild = e.guild
+            guild.controller.setNickname(e.guild.selfMember, e.prevNick)
+            var initiator: User? = null
+            if (guild.getMember(UADAB.bot.selfUser).hasPermission(Permission.VIEW_AUDIT_LOGS)) {
+                initiator = guild.auditLogs.type(ActionType.MEMBER_UPDATE).complete()
+                        .filter { it.targetId == UADAB.bot.selfUser.id }
+                        .filter { it.changes.contains("nick") }
+                        .firstOrNull {
+                            val change = it.changes["nick"]!!
+                            e.prevNick == change.getOldValue() && e.newNick == change.getNewValue()
+                        }?.user
+            }
+            if (initiator != null) {
+                val user = Users[initiator]
+                if(user.classification in ADMIN_OR_INTERFACE) {
+                    initiator.openPrivateChannel().queue {
+                        it.sendMessage(EmbedUtils.create(Color.YELLOW, "Error",
+                                "Direct renaming not allowed, use 'sudo name %name%'", SystemCommands.cat.img))
+                                .queue()
+                    }
+                } else {
+                    initiator.openPrivateChannel().queue {
+                        it.sendMessage(EmbedUtils.create(Color.RED, "Error", "You are not allowed to rename this bot",
+                                SystemCommands.cat.img)).queue()
+                    }
+                }
+            }
+        }
+    }
+
+
     override fun onStatusChange(e: StatusChangeEvent) {
         if (e.status == JDA.Status.SHUTTING_DOWN) {
             try {
                 Users.save()
+                SystemIntegrityProtection.save()
             } catch (ex: IOException) {
                 UADAB.log.log(ex)
             }
@@ -50,6 +91,7 @@ object UADABEventListener : ListenerAdapter() {
     override fun onReady(e: ReadyEvent) {
         UADAB.initBot(e.jda)
         Users.totalAuth(e.jda.users)
+        SystemIntegrityProtection.load()
         if (Users["Admin"] == null) {
             UADAB.claimCode = UUID.randomUUID()
             println("No admin found. Issuing claim code: ${UADAB.claimCode}")

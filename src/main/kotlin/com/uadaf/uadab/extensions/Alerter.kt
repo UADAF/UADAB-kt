@@ -2,23 +2,17 @@
 
 package com.uadaf.uadab.extensions
 
-import com.google.cloud.texttospeech.v1beta1.*
 import com.gt22.randomutils.log.SimpleLog
 import com.uadaf.uadab.UADAB
-import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.users.UADABUser
 import com.uadaf.uadab.users.Users
 import com.uadaf.uadab.utils.EmbedUtils
-import kotlinx.coroutines.experimental.launch
-import net.dv8tion.jda.core.entities.VoiceChannel
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage
 import org.eclipse.jetty.websocket.api.annotations.WebSocket
 import java.awt.Color
-import java.io.File
-import java.io.FileOutputStream
 
 
 @WebSocket
@@ -26,11 +20,11 @@ object Alerter : IExtension {
     private val log = SimpleLog.getLog("UADAB#Alert").apply { level = SimpleLog.Level.DEBUG }
 
 
-    val client: TextToSpeechClient
+    //val client: TextToSpeechClient
 
     init {
         log.debug("Creating client")
-        client = TextToSpeechClient.create()
+        //client = TextToSpeechClient.create()
         log.debug("Created")
     }
 
@@ -97,7 +91,7 @@ object Alerter : IExtension {
             }
         } else false
         if(useVoice) {
-            synthesizeText(msg, channel!!)
+            //synthesizeText(msg, channel!!)
         } else {
             usr.discordUser.openPrivateChannel()?.queue {
                 it.sendMessage(EmbedUtils.create(Color.RED, "Remote alert", msg,
@@ -106,7 +100,7 @@ object Alerter : IExtension {
         }
     }
 
-    fun synthesizeText(text: String, channel: VoiceChannel) {
+    /*fun synthesizeText(text: String, channel: VoiceChannel) {
         // Instantiates a client
         launch {
             // Set the text input to be synthesized
@@ -141,7 +135,7 @@ object Alerter : IExtension {
             log.debug("Saying file")
             MusicHandler.loadSingle(out.absolutePath, channel.guild, noRepeat = false, addBefore = true)
         }
-    }
+    }*/
 
     @OnWebSocketClose
     fun onDisconnect(s: Session, code: Int, reason: String) {

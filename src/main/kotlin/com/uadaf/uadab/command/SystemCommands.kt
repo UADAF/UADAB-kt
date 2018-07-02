@@ -3,28 +3,49 @@ package com.uadaf.uadab.command
 import com.gt22.randomutils.Instances
 import com.jagrosh.jdautilities.command.Command
 import com.jagrosh.jdautilities.command.CommandEvent
+import com.uadaf.uadab.DatabseManager
+import com.uadaf.uadab.SystemIntegrityProtection
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.AdvancedCommand
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.music.MusicHandler
-import com.uadaf.uadab.users.ADMIN_OR_INTERFACE
-import com.uadaf.uadab.users.Classification
-import com.uadaf.uadab.users.EVERYONE
-import com.uadaf.uadab.users.Users
+import com.uadaf.uadab.users.*
 import com.uadaf.uadab.utils.EmbedUtils
+import com.uadaf.uadab.utils.getters.Getters
+import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
 import java.awt.Color
-import java.awt.Color.RED
-import java.awt.Color.YELLOW
+import java.awt.Color.*
+import java.sql.SQLException
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 object SystemCommands : ICommandList {
     override val cat: AdvancedCategory = AdvancedCategory("System", Color(0x5E5E5E), "http://52.48.142.75/images/gear.png")
+    private val CHECK_USER = DatabseManager.connection.prepareStatement("SELECT COUNT(*) as `count` FROM `tokens` WHERE `user` = ?")
+    private val INSERT_TOKEN = DatabseManager.connection.prepareStatement("INSERT INTO `tokens` VALUES (?, ?)")
+    private val DELETE_TOKEN = DatabseManager.connection.prepareStatement("DELETE FROM `tokens` WHERE `user` = ?")
+    private val UPDATE_TOKEN = DatabseManager.connection.prepareStatement("UPDATE `tokens` SET `token` = ? WHERE `user` = ?")
 
+    private fun hasToken(usr: String): Boolean {
+        CHECK_USER.setString(1, usr)
+        val countRes = CHECK_USER.executeQuery()
+        if (countRes.next()) {
+            return countRes.getInt(1) != 0
+        } else {
+            throw SQLException("Something went wrong when retrieving token count for user")
+        }
+    }
+
+    private fun createToken(): String {
+        val arr = ByteArray(64)
+        Instances.getRand().nextBytes(arr)
+        return Base64.getUrlEncoder().encodeToString(arr)
+    }
 
     override fun init(): Array<Command> = arrayOf(
             command("ping", "Bot test") { e ->
@@ -41,6 +62,90 @@ object SystemCommands : ICommandList {
                     reply(e, Classification.ADMIN.color, "Can You Hear Me?", "Hello, Admin", user.avatarWithClassUrl)
                 }
             }.setHidden().build(),
+            command("token", "Create bot-api token") { e ->
+                val private = async { e.author.openPrivateChannel().complete() }
+                val token = createToken()
+                launch {
+                    val usr = Users[e.author]
+                    try {
+                        if (hasToken(usr.name)) {
+                            private.await().sendMessage(
+                                    EmbedUtils.create(RED, "Error",
+                                            "You already have token," +
+                                                    " run 'token regen' to explicitly recreate it", cat.img)).queue()
+                        } else {
+                            INSERT_TOKEN.setString(1, usr.name)
+                            INSERT_TOKEN.setString(2, token)
+                            INSERT_TOKEN.execute()
+                            private.await().sendMessage(EmbedUtils.create(GREEN, "Your token",
+                                    token, cat.img)).queue()
+
+                        }
+                    } catch (ex: SQLException) {
+                        private.await().sendMessage(EmbedUtils.create(RED, "Something went wrong",
+                                ex.localizedMessage, cat.img))
+                    }
+                }
+            }.setAllowedClasses(ADMIN_OR_INTERFACE).setChildren(
+                    command("delete", "Delete someone's token. Admin only") { e ->
+                        val private = async { e.author.openPrivateChannel().complete() }
+                        val name = e.args
+                        val discUsr = Getters.getUser(name).getSingle()
+                        val usr = if(discUsr == null) {
+                            Users[e.args]
+                        } else {
+                            Users[discUsr]
+                        }
+                        launch {
+                            if (usr == null) {
+                                private.await().sendMessage(EmbedUtils.create(RED, "Error",
+                                        "User not found", cat.img)).queue()
+                            } else {
+                                try {
+                                    if (hasToken(usr.name)) {
+                                        DELETE_TOKEN.setString(1, usr.name)
+                                        DELETE_TOKEN.execute()
+                                        private.await().sendMessage(EmbedUtils.create(GREEN, "Success",
+                                                "Token for ${usr.name} deleted", cat.img)).queue()
+                                    } else {
+                                        private.await().sendMessage(EmbedUtils.create(RED, "Error",
+                                                "User have no token", cat.img)).queue()
+                                    }
+                                } catch (ex: SQLException) {
+                                    private.await().sendMessage(EmbedUtils.create(RED, "Something went wrong",
+                                            ex.localizedMessage, cat.img))
+                                }
+                            }
+                        }
+                    }.setAllowedClasses(ADMIN_ONLY).setOnDenied { _, _ -> }.setHidden().build(),
+                    command("regen", "Recreates you token") { e ->
+                        val private = async { e.author.openPrivateChannel().complete() }
+                        val usr = Users[e.author]
+                        launch {
+                            try {
+                                if (hasToken(usr.name)) {
+                                    val token = createToken()
+                                    UPDATE_TOKEN.setString(1, token)
+                                    UPDATE_TOKEN.setString(2, usr.name)
+                                    UPDATE_TOKEN.execute()
+                                    private.await().sendMessage(EmbedUtils.create(GREEN, "Your new token",
+                                            token, cat.img)).queue()
+                                } else {
+                                    private.await().sendMessage(EmbedUtils.create(RED, "Error",
+                                            "You have no token, run 'token' to create it", cat.img)).queue()
+                                }
+                            } catch (ex: SQLException) {
+                                private.await().sendMessage(EmbedUtils.create(RED, "Something went wrong",
+                                        ex.localizedMessage, cat.img))
+                            }
+                        }
+                    }.setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _, _ -> }.setHidden().build()
+            ).setOnDenied { _, _ -> }.setHidden().build(),
+            command("name", "Rename the bot") { e ->
+                SystemIntegrityProtection.allowedNicks.add(e.args)
+                e.guild.controller.setNickname(e.selfMember, e.args).queue()
+                e.reply(EmbedUtils.create(GREEN, "Success", "Renamed", cat.img))
+            }.setHidden().setAllowedClasses(ADMIN_OR_INTERFACE).build(),
             command("asd", "Bot joins your channel") { e ->
                 val ch = e.member.voiceState.channel
                 e.guild.audioManager.openAudioConnection(ch)
@@ -111,7 +216,7 @@ object SystemCommands : ICommandList {
     private fun createHelpForCommand(embed: EmbedBuilder, c: AdvancedCommand, prefix: String, inline: Boolean) {
         with(c) {
             embed.addField("$prefix $name $arguments", help, inline)
-            embed.addField("Allowed for:", allowedFor.stream().map(Classification::name).distinct().reduce {s1, s2 -> s1 + '\n' + s2}.get(), false)
+            embed.addField("Allowed for:", allowedFor.stream().map(Classification::name).distinct().reduce { s1, s2 -> s1 + '\n' + s2 }.get(), false)
             if (c.children.isNotEmpty()) {
                 val newPrefix = "$prefix ${c.name}"
                 c.children.forEach { createHelpForCommand(embed, it as AdvancedCommand, newPrefix, true) }

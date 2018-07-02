@@ -1,11 +1,16 @@
 package com.uadaf.uadab.command
 
 import com.jagrosh.jdautilities.command.Command
+import com.uadaf.uadab.FrequentBash
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.ICommandList
+import com.uadaf.uadab.users.EVERYONE
 import com.uadaf.uadab.utils.Boxes
+import com.uadaf.uadab.utils.EmbedUtils
 import com.uadaf.uadab.utils.poiColors
 import com.uadaf.uadab.utils.xkcdColors
+import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.core.entities.MessageEmbed
 import java.awt.Color
 import java.awt.Color.RED
 import java.io.File
@@ -35,7 +40,38 @@ object MiscCommands : ICommandList {
             val img = Boxes.getBox(size.toInt(), size.toInt(), primaryColor, secondaryColor)
             ImageIO.write(img, "PNG", File("box.png"))
             it.reply(File("box.png"), "box.png")
-        }.setArguments("%width%, %height%, %color1%, %color2%").build())
+        }.setArguments("%width%, %height%, %color1%, %color2%").build(), command("explain", "Explains something") { e ->
+            if(e.args.toLowerCase() == "list") {
+                var embed = EmbedBuilder()
+                        .setColor(cat.color)
+                        .setThumbnail(cat.img)
+                        .setTitle("Things-to-explain-list")
+                FrequentBash.fb.keys.forEach {
+                    if(embed.descriptionBuilder.length + it.length >= MessageEmbed.TEXT_MAX_LENGTH) {
+                        e.reply(embed.build())
+                        embed = EmbedBuilder()
+                                .setColor(cat.color)
+                                .setThumbnail(cat.img)
+                                .setTitle("Things-to-explain-list")
+                    } else {
+                        embed.appendDescription(it).appendDescription("\n")
+                    }
+                }
+                if(embed.descriptionBuilder.isNotEmpty()) {
+                   e.reply(embed.build())
+                }
+                e.reactSuccess()
+            } else {
+                val url = FrequentBash.fb[e.args.toLowerCase()]
+                if(url == null) {
+                    e.reply(EmbedUtils.create(RED, "Not found", "This thing is not on things-to-explain-list, use 'sudo explain list'", cat.img))
+                    e.reactWarning()
+                } else {
+                    e.reply(EmbedUtils.create(cat.color, e.args, url, cat.img))
+                    e.reactSuccess()
+                }
+            }
+        }.setArguments("list|%name%").setAllowedClasses(EVERYONE).build())
     }
 
     fun extractColor(c: String): Color? {

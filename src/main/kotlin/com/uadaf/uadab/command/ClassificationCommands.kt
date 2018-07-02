@@ -35,12 +35,12 @@ object ClassificationCommands : ICommandList {
             val author = Users[e]
 
             val cls = usr.classification
-            val shouldContact = (cls == Classification.ADMIN || cls == Classification.SYSTEM) && (author.classification != Classification.ADMIN && author.classification != Classification.ANALOG_INTERFACE)
+            val shouldContact = (cls == Classification.ADMIN || cls == Classification.SYSTEM) && (author.classification !in ADMIN_OR_INTERFACE)
             if (shouldContact) {
                 reply(e, RED, "No, no, no", "Monitor request denied" + if (shouldContact) "\nContacting Admin" else "", Classification.UNKNOWN.getImg())
                 e.reactWarning()
                 if (shouldContact) {
-                    Instances.getExecutor().submit {
+                    launch {
                         UADAB.contactAdmin(EmbedUtils.create(YELLOW,
                                 "Monitor attempt detected",
                                 "User '${author.name}' tried to monitor ${usr.name}",
@@ -157,7 +157,7 @@ object ClassificationCommands : ICommandList {
                 return null
             }
 
-            ret = Users[user.getSingle().get()]
+            ret = Users[user.getSingle()!!]
         }
         return ret
     }

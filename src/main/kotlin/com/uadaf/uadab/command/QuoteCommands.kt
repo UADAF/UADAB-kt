@@ -10,6 +10,7 @@ import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.users.ASSETS
 import com.uadaf.uadab.utils.*
+import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.MessageEmbed
 import java.awt.Color
@@ -83,7 +84,7 @@ object QuoteCommands : ICommandList {
                         reply(e, RED, "Invalid args", "Args should be '%author% %quote%'", cat.img)
                         e.reactError()
                     }
-                    Instances.getExecutor().submit {
+                    launch {
                         try {
                             val r = Instances.getParser().parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                                     "task" to "ADD",

@@ -42,12 +42,12 @@ class Wrapper<T: Any> {
         }
     }
 
-    fun getSingle(): Optional<T> {
-        return Optional.ofNullable(single)
+    fun getSingle(): T? {
+        return single
     }
 
-    fun getMulti(): Optional<List<T>> {
-        return Optional.of(multi)
+    fun getMulti(): List<T>? {
+        return multi
     }
 
     private fun single(e: T) {

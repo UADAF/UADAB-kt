@@ -14,4 +14,7 @@ class Config {
     lateinit var CO_OWNERS: Array<String>
     lateinit var QUOTER_URL: String
     lateinit var QUOTER_KEY: String
+    lateinit var DB_HOST: String
+    lateinit var DB_LOGIN: String
+    lateinit var DB_PASS: String
 }
