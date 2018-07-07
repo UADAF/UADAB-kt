@@ -5,10 +5,8 @@ import com.uadaf.uadab.FrequentBash
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.users.EVERYONE
-import com.uadaf.uadab.utils.Boxes
-import com.uadaf.uadab.utils.EmbedUtils
-import com.uadaf.uadab.utils.poiColors
-import com.uadaf.uadab.utils.xkcdColors
+import com.uadaf.uadab.utils.*
+import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.MessageEmbed
 import java.awt.Color
@@ -71,7 +69,54 @@ object MiscCommands : ICommandList {
                     e.reactSuccess()
                 }
             }
-        }.setArguments("list|%name%").setAllowedClasses(EVERYONE).build())
+        }.setArguments("list|%name%").setAllowedClasses(EVERYONE).build(), command("http", "Get description of HTTP Status codes") { e ->
+            HTTPCodesUtils.getDataSet({codes ->
+                var args = e.args
+                val description = if("-nd" in args) {
+                    args = args.replaceFirst("-nd", "")
+                    false
+                } else true
+                if(args.isBlank()) {
+                    var embed = EmbedBuilder().setColor(cat.color).setTitle("All HTTP Status codes").setThumbnail(cat.img)
+                    codes.forEach {
+                        if(embed.fields.count() > 23) {
+                            e.reply(embed.build())
+                            embed = EmbedBuilder().setColor(cat.color).setTitle("All HTTP Status codes").setThumbnail(cat.img)
+                        }else {
+                            embed.addField("${it.code} - ${it.phrase}", if(description) it.description else "", false)
+                        }
+                    }
+                    if(embed.fields.isNotEmpty())
+                        e.reply(embed.build())
+                }else {
+                    val requested = args.trim().split(" ").map(String::trim).distinct()
+                    val invalid = requested.filter { it.toIntOrNull() == null || !codes.any { c -> it.toInt() == c.code }}
+                    val valid = requested.filter { it.toIntOrNull() != null }.map(String::toInt)
+                    var embed = EmbedBuilder().setTitle("Some HTTP Status codes you need").setColor(cat.color).setThumbnail(cat.img)
+                    valid.flatMap { codes.filter { c -> it == c.code } }.forEach {
+                        if(embed.fields.count() > 23) {
+                            e.reply(embed.build())
+                            embed = EmbedBuilder().setTitle("Some HTTP Status codes you need").setColor(cat.color).setThumbnail(cat.img)
+                        } else {
+                            embed.addField("${it.code} - ${it.phrase}", if(description) it.description else "", false)
+                        }
+                    }
+                    if(invalid.isNotEmpty()) {
+                        if(embed.fields.count() > 23) {
+                            e.reply(embed.build())
+                            e.reply(EmbedUtils.create(cat.color,"Some of these codes I couldn't recognize.", invalid.reduce { c1, c2 -> "$c1, $c2" }, cat.img))
+                        }else {
+                            embed.addField("Some of these codes I couldn't recognize.", invalid.reduce { c1, c2 -> "$c1, $c2" }, false)
+                            e.reply(embed.build())
+                        }
+                    }else{
+                        e.reply(embed.build())
+                    }
+                }
+            }, {error ->
+                e.reply(EmbedUtils.create(RED, "This is the Server error. I'm sorry", "Do you understand something?\n\n$error", cat.img))
+            })
+        }.setArguments("%code%").setAllowedClasses(EVERYONE).build())
     }
 
     fun extractColor(c: String): Color? {
