@@ -2,14 +2,17 @@
 
 package com.uadaf.uadab.extensions
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.gt22.randomutils.builder.JsonArrayBuilder
 import com.gt22.randomutils.builder.JsonObjectBuilder
 import com.gt22.randomutils.log.SimpleLog
 import com.uadaf.uadab.UADAB
+import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.users.Classification
 import com.uadaf.uadab.users.UADABUser
 import com.uadaf.uadab.users.Users
+import com.uadaf.uadab.utils.set
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.eclipse.jetty.websocket.api.Session
@@ -59,6 +62,7 @@ object Web : ListenerAdapter(), IExtension {
         when (msg) {
             "ping" -> s.remote.sendString("{\"pong\": \"${s.remoteAddress.hostName}\"")
             "status" -> status(s)
+            "music" -> music(s)
             "user" -> user(s, args[0])
             "reclass" -> reclass(s, args[0], args[1])
             else -> s.remote.sendString("{\"state\": \"CMD_NOT_FOUND\"}")
@@ -77,11 +81,21 @@ object Web : ListenerAdapter(), IExtension {
                 .add("mem", ((rt.totalMemory() - rt.freeMemory()) shr 20).toInt())
                 .add("state", UADAB.bot.status.toString())
                 .add("users", UADAB.bot.users.size)
-                .add("currentMusic", "NONE")
                 .add("startTime", UADAB.startTime.toString())
                 .add("avatarUrl", UADAB.bot.selfUser.effectiveAvatarUrl)
                 .build().toString()
         s.remote.sendString(res)
+    }
+
+    fun music(s: Session) {
+        val playlists = MusicHandler.getAllPlaylists()
+        val res = JsonObject()
+        for((guild, playlist) in playlists) {
+            val arr = JsonArray()
+            playlist.forEach { arr.add(it.identifier) }
+            res[guild.name] = arr
+        }
+        s.remote.sendString(res.toString())
     }
 
     private fun userInfo(user: UADABUser): JsonObject {

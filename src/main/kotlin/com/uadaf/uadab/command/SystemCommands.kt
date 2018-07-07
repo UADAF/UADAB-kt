@@ -152,7 +152,7 @@ object SystemCommands : ICommandList {
                 e.reactSuccess()
                 launch {
                     delay(2, TimeUnit.SECONDS)
-                    MusicHandler.loadSingle("cyhm.mp3", e.guild, noRepeat = false, addBefore = true)
+                    //MusicHandler.loadSingle("cyhm.mp3", e.guild, noRepeat = false, addBefore = true)
                 }
             }.setGuildOnly(true).setBotPermissions(Permission.VOICE_CONNECT).setAliases("фыв").build(),
             command("dsa", "Bot leaves your channel") { e ->

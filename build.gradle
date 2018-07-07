@@ -42,6 +42,7 @@ dependencies {
     compile 'org.jooq:jool:0.9.12'
     compile 'com.sedmelluq:lavaplayer:1.2.56'
     compile 'com.gt22:RandomUtils:1.0'
+    compile 'com.uadaf:uadamlib:1.0'
     //compile 'org.apache.commons:commons-lang3:3.6'
     compile 'org.slf4j:slf4j-simple:1.7.25'
     compile 'com.github.davidmoten:rxjava2-extras:0.1.20'

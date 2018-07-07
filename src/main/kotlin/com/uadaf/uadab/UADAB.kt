@@ -8,6 +8,7 @@ import com.jagrosh.jdautilities.command.CommandClient
 import com.jagrosh.jdautilities.command.CommandClientBuilder
 import com.uadaf.uadab.command.*
 import com.uadaf.uadab.command.base.ICommandList
+import com.uadaf.uadab.command.music.MusicCommands
 import com.uadaf.uadab.extensions.ExtensionRegistry
 import com.uadaf.uadab.users.Users
 import com.uadaf.uadab.utils.ConfigUtils

@@ -1,4 +1,4 @@
-package com.uadaf.uadab.command
+package com.uadaf.uadab.command.music
 
 import com.jagrosh.jdautilities.command.Command
 import com.jagrosh.jdautilities.command.CommandEvent
@@ -8,11 +8,9 @@ import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.CommandBuilder
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.music.MusicHandler
-import com.uadaf.uadab.music.MusicHandler.LoadResult.*
 import com.uadaf.uadab.users.ASSETS
 import java.awt.Color
 import java.awt.Color.*
-import java.net.URL
 import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.*
@@ -20,7 +18,7 @@ import java.util.*
 object MusicCommands : ICommandList {
 
     private val MUSIC_DIR = Paths.get(UADAB.config.MUSIC_DIR)
-    private val playlistTimeFormat = SimpleDateFormat("HH:mm:ss")
+    private val playlistTimeFormat = SimpleDateFormat("HH:mm:ss").apply { timeZone = TimeZone.getTimeZone("UTC") }
     override val cat = AdvancedCategory("Music", Color(0xAFEBF3), "http://52.48.142.75/images/an.png")
 
     /**
@@ -31,58 +29,7 @@ object MusicCommands : ICommandList {
     }
 
     override fun init(): Array<Command> {
-        return arrayOf(command("play", "Play music") { e ->
-            var args = e.args
-            var all = false
-            var noRepeat = true
-            var count = 1
-            val a = args.split("\\s".toRegex()).dropLastWhile(String::isEmpty)
-            val resultArgs = mutableListOf<String>()
-            var i = 0
-            while (i < a.size) {
-                val arg = a[i]
-                when (arg) {
-                    "-a", "--all" -> {
-                        all = true
-                    }
-                    "-r", "--allow-repeat" -> {
-                        noRepeat = false
-                    }
-                    "*" -> {
-                        try {
-                            i++
-                            if (i > a.lastIndex) {
-                                reply(e, RED, "Count not specified", "Specify count after *")
-                                return@command
-                            }
-                            count = Integer.parseInt(a[i])
-                        } catch (ex: NumberFormatException) {
-                            reply(e, RED, "Invalid count", "Count should be a number", cat.img)
-                            return@command
-                        }
-                    }
-                    else -> {
-                        resultArgs.add(arg)
-                    }
-                }
-                i++
-            }
-            args = resultArgs.joinToString(" ")
-            val ret = if (args.startsWith("http")) {
-                MusicHandler.load(URL(args), e.guild, count, noRepeat = noRepeat)
-            } else {
-                MusicHandler.load(MUSIC_DIR.resolve(args), e.guild, count, all = all, noRepeat = noRepeat)
-            }
-            val rep = when (ret.first) {
-                SUCCESS -> GREEN to "Loaded"
-                ALREADY_IN_QUEUE -> YELLOW to "This track is already in queue and repeats disallowed\n${ret.second}"
-                NOT_FOUND -> RED to "Track not found: ${formatTrack(ret.second ?: "")}"
-                FAIL -> RED to (ret.second ?: "Failed to load track")
-                UNKNOWN -> BLACK to "Something really wrong happened"
-            }
-            reply(e, rep.first, "Result:", rep.second, cat.img)
-
-        }.setOnDenied { _, e -> reply(e, RED, "You shall not play!", "", cat.img) }.setAllowedClasses(ASSETS).setArguments("(%songName%|%songUrl%) [--all] [* i%count%]").build(), command("pause", "Pause playing") { e ->
+        return arrayOf(PlayCommand, command("pause", "Pause playing") { e ->
             val g = e.guild
             if (!MusicHandler.isPaused(g) && MusicHandler.playlistSize(g) > 0) {
                 MusicHandler.pause(g)
@@ -147,10 +94,12 @@ object MusicCommands : ICommandList {
             var playlistNum = 1
             var totalTime = 0L
             //Manually add first element to add percents
-            val current = MusicHandler.currentTrack(g)
+            val current = MusicHandler.currentTrack(g)!!
             totalTime += current.duration - current.position
             addPlaylistElement(playlistBuilder, 1, current)
             playlistBuilder.append(' ').append(current.position * 100 / current.duration).append('%')
+
+
             MusicHandler.getPlaylist(g).forEachIndexed { i, track ->
                 totalTime += current.duration
                 addPlaylistElement(playlistBuilder.append('\n'), i + 2, track)
@@ -167,10 +116,13 @@ object MusicCommands : ICommandList {
         }.build())
     }
 
+
+
     private fun formatTrack(name: String): String {
-        val start = MUSIC_DIR.toAbsolutePath().toString().length
-        val end = name.lastIndexOf('.')
-        return name.replace(java.io.File.separatorChar, '/').substring(if (start == -1) 0 else start + 1, if (end == -1) name.length else end)
+        if(name.startsWith("http")) {
+            return name
+        }
+        return PlayCommand.formatData(MusicHandler.getVariants(name.removePrefix("Music/"))[0])
     }
 
     private fun addPlaylistElement(playlist: StringBuilder, pos: Int, track: AudioTrack) {
@@ -182,4 +134,7 @@ object MusicCommands : ICommandList {
         val title = if (part == -1) "Playlist" else "Playlist part $part"
         reply(e, GREEN, title, playlist, cat.img)
     }
+
+
+
 }

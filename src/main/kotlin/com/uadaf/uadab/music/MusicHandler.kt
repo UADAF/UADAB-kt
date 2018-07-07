@@ -1,6 +1,9 @@
 package com.uadaf.uadab.music
 
 import com.gt22.randomutils.Instances
+import com.gt22.uadam.data.BaseData
+import com.gt22.uadam.data.MusicContext
+import com.gt22.uadam.data.Song
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
@@ -8,19 +11,26 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import com.uadaf.uadab.UADAB
+import com.uadaf.uadab.utils.random
 import net.dv8tion.jda.core.entities.Guild
-import java.net.URL
-import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.stream.Collectors
-
+import java.util.*
 
 object MusicHandler {
 
-    val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
+    private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
+    val context = MusicContext.create(Paths.get(UADAB.config.MUSIC_DIR))
 
+    enum class LoadResult {
+        SUCCESS,
+        ALREADY_IN_QUEUE,
+        NOT_FOUND,
+        FAIL,
+        UNKNOWN
+    }
+    
     init {
         AudioSourceManagers.registerRemoteSources(playerManager)
         AudioSourceManagers.registerLocalSource(playerManager)
@@ -78,7 +88,7 @@ object MusicHandler {
         }
     }
 
-    fun currentTrack(guild: Guild): AudioTrack {
+    fun currentTrack(guild: Guild): AudioTrack? {
         return getGuildAudioPlayer(guild).player.playingTrack
     }
 
@@ -89,107 +99,106 @@ object MusicHandler {
         return getGuildAudioPlayer(guild).scheduler.getPlaylist()
     }
 
-    enum class LoadResult {
-        SUCCESS,
-        ALREADY_IN_QUEUE,
-        NOT_FOUND,
-        FAIL,
-        UNKNOWN
-    }
+    fun getAllPlaylists(): Map<Guild, List<AudioTrack>> = mapOf(
+            *musicManagers.keys.map(UADAB.bot::getGuildById)
+                    .map { it to getPlaylist(it) }
+                    .toTypedArray()
+    )
 
-    fun loadSingle(file: String, guild: Guild, count: Int = 1, noRepeat: Boolean = true, addBefore: Boolean = false): Pair<LoadResult, String?> {
-        var nr = noRepeat
-        if(count > 1) nr = false //No repeat and count > 1 for single track is invalid
+    data class MusicArgs(
+            var count: Int = 1,
+            var noRepeat: Boolean = true,
+            var all: Boolean = false,
+            var first: Boolean = false
+    )
+
+    fun loadDirect(name: String, guild: Guild, args: MusicArgs): Pair<LoadResult, String?> {
         var result: LoadResult? = null
         var msg: String? = null
         val player = getGuildAudioPlayer(guild)
-        playerManager.loadItem(file, object : AudioLoadResultHandler {
+        val addFunc = if (args.first) player.scheduler.queue::addFirst else player.scheduler::queue
+        playerManager.loadItem(name.replace("//", "/"), object : AudioLoadResultHandler {
             override fun loadFailed(exception: FriendlyException) {
                 result = LoadResult.FAIL
                 msg = exception.localizedMessage
             }
 
             override fun trackLoaded(track: AudioTrack) {
-                if(nr && (player.scheduler.hasTack(track) || player.player.playingTrack?.identifier == track.identifier)) {
+                if (args.noRepeat && (player.scheduler.hasTack(track) || player.player.playingTrack?.identifier == track.identifier)) {
                     result = LoadResult.ALREADY_IN_QUEUE
                     return
                 }
                 result = LoadResult.SUCCESS
-                if(addBefore) {
-                    player.player.playingTrack?.let(player.scheduler.queue::addFirst)
-                    for(i in 1..count) {
-                        player.scheduler.queue.addFirst(track)
-                    }
-                    player.scheduler.nextTrack()
-                } else {
-                    for (i in 1..count) {
-                        player.scheduler.queue(track)
-                    }
-                }
+                if (args.first) player.player.playingTrack?.let(player.scheduler.queue::addFirst)
+                addFunc(track)
+                if (args.first) player.scheduler.nextTrack()
             }
 
             override fun noMatches() {
                 result = LoadResult.NOT_FOUND
-                msg = file
+                msg = name
             }
 
-            override fun playlistLoaded(playlist: AudioPlaylist) {
-                result = LoadResult.SUCCESS
-                for(i in 0 until count) {
-                    playlist.tracks.forEach(player.scheduler::queue)
-                }
-            }
+            override fun playlistLoaded(playlist: AudioPlaylist) {}
 
         }).get()
         return (result ?: LoadResult.UNKNOWN) to msg
     }
 
-    fun <E> List<E>.random(random: java.util.Random): E? = if (size > 0) get(random.nextInt(size)) else null
+    fun getVariants(name: String) = context.search(name)
 
-    private fun loadDir(dir: Path, guild: Guild, count: Int = 1, all: Boolean = false, noRepeat: Boolean = true): Pair<LoadResult, String?> {
-        if(Files.notExists(dir)) return LoadResult.NOT_FOUND to "Directory not found"
-        var nr = noRepeat
-        if(count > 1 && all && noRepeat) nr = false
-        val files: MutableList<Path> = Files.list(dir).collect(Collectors.toList())
-        if(files.isEmpty()) {
-            return LoadResult.NOT_FOUND to "Directory empty"
-        }
-        for(i in 0 until count) {
-            if(all) {
-                files.sortedWith(compareBy({if(Files.isDirectory(it)) 0 else 1}, {it})) //Directories first, then natural ordering
-                        .forEach{ load(it, guild, 1, all = all, noRepeat = noRepeat) }
+    private fun getSongs(data: BaseData): List<Song> {
+        val queue = LinkedList<BaseData>()
+        val ret = mutableListOf<Song>()
+        queue.add(data)
+        while (queue.isNotEmpty()) {
+            val cur = queue.remove()
+            if (cur is Song) {
+                ret.add(cur)
             } else {
-                var file = files.random(Instances.getRand())
-                while(load(file!!, guild, 1, noRepeat = nr).first == LoadResult.ALREADY_IN_QUEUE) {
-                    files.remove(file)
-                    if(files.isEmpty()) {
-                        return LoadResult.ALREADY_IN_QUEUE to "Loaded $i files"
+                cur.children.forEach { _, value ->
+                    if (value is Song) {
+                        ret.add(value)
+                    } else {
+                        queue.add(value)
                     }
-                    file = files.random(Instances.getRand())
                 }
             }
         }
-        return LoadResult.SUCCESS to null
+        return ret
     }
 
-    fun Path.defaultExt(ext: String): Path {
-        return if(fileName.toString().contains(".")) {
-            this
-        } else {
-            Paths.get("${toAbsolutePath()}.$ext")
+    fun load(data: Song, guild: Guild, args: MusicArgs): Pair<LoadResult, String?> {
+        return loadDirect(UADAB.config.MUSIC_DIR + data.path, guild, args)
+    }
+
+    fun load(data: BaseData, guild: Guild, args: MusicArgs): Pair<LoadResult, String?> {
+        val validSongs = getSongs(data)
+        val rets = mutableListOf<Pair<LoadResult, String?>>()
+        for (i in 1..args.count) {
+            rets.add(
+                    if (args.all) {
+                        val res = validSongs.map {
+                            load(it, guild, args)
+                        }
+                        if (res.any { it.first != LoadResult.SUCCESS }) {
+                            LoadResult.UNKNOWN to "Something went wrong"
+                        } else {
+                            LoadResult.SUCCESS to "Loaded"
+                        }
+                    } else {
+                        var alreadyIn = 0
+                        while (load(validSongs.random(Instances.getRand())!!, guild, args).first
+                                == LoadResult.ALREADY_IN_QUEUE && alreadyIn++ < 1000) {
+                        }
+                        if (alreadyIn >= 1000) {
+                            LoadResult.ALREADY_IN_QUEUE to "$i tracks was loaded"
+                        } else {
+                            LoadResult.SUCCESS to "Loaded"
+                        }
+                    }
+            )
         }
+        return rets.random(Instances.getRand())!!
     }
-
-    fun load(path: Path, guild: Guild, count: Int = 1, all: Boolean = false, noRepeat: Boolean = true): Pair<LoadResult, String?> {
-        return if(Files.isDirectory(path)) {
-            loadDir(path, guild, count, all, noRepeat)
-        } else {
-            loadSingle(path.defaultExt("mp3").toAbsolutePath().toString(), guild, count, noRepeat)
-        }
-    }
-
-    fun load(path: URL, guild: Guild, count: Int = 1, noRepeat: Boolean = true): Pair<LoadResult, String?> {
-        return loadSingle(path.toExternalForm(), guild, count, noRepeat)
-    }
-
 }

@@ -22,6 +22,7 @@ import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberNickChangeEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleRemoveEvent
+import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.core.events.user.UserAvatarUpdateEvent
 import net.dv8tion.jda.core.events.user.UserNameUpdateEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
@@ -44,9 +45,10 @@ object UADABEventListener : ListenerAdapter() {
     }
 
     override fun onGuildMemberNickChange(e: GuildMemberNickChangeEvent) {
-        if(e.user == UADAB.bot.selfUser && e.newNick !in SystemIntegrityProtection.allowedNicks) {
+        //nick == null -> default nick
+        if(e.user == UADAB.bot.selfUser && e.newNick != null && e.newNick !in SystemIntegrityProtection.allowedNicks) {
             val guild = e.guild
-            guild.controller.setNickname(e.guild.selfMember, e.prevNick)
+            guild.controller.setNickname(e.guild.selfMember, e.prevNick).queue()
             var initiator: User? = null
             if (guild.getMember(UADAB.bot.selfUser).hasPermission(Permission.VIEW_AUDIT_LOGS)) {
                 initiator = guild.auditLogs.type(ActionType.MEMBER_UPDATE).complete()
@@ -59,17 +61,15 @@ object UADABEventListener : ListenerAdapter() {
             }
             if (initiator != null) {
                 val user = Users[initiator]
-                if(user.classification in ADMIN_OR_INTERFACE) {
-                    initiator.openPrivateChannel().queue {
-                        it.sendMessage(EmbedUtils.create(Color.YELLOW, "Error",
-                                "Direct renaming not allowed, use 'sudo name %name%'", SystemCommands.cat.img))
-                                .queue()
-                    }
+                val msg = if (user.classification in ADMIN_OR_INTERFACE) {
+                    "Direct renaming not allowed, use 'sudo name %name%'"
                 } else {
-                    initiator.openPrivateChannel().queue {
-                        it.sendMessage(EmbedUtils.create(Color.RED, "Error", "You are not allowed to rename this bot",
-                                SystemCommands.cat.img)).queue()
-                    }
+                    "You are not allowed rename this bot"
+                }
+                initiator.openPrivateChannel().queue {
+                    it.sendMessage(EmbedUtils.create(Color.YELLOW, "Error",
+                            msg, SystemCommands.cat.img))
+                            .queue()
                 }
             }
         }
@@ -162,5 +162,9 @@ object UADABEventListener : ListenerAdapter() {
 
     override fun onUserAvatarUpdate(e: UserAvatarUpdateEvent) {
         Users[e.user].onAvatarUpdate()
+    }
+
+    override fun onMessageReactionAdd(e: MessageReactionAddEvent) {
+        ReactionHandler.reaction(e)
     }
 }

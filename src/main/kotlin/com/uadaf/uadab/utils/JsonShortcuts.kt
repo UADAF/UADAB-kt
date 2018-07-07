@@ -43,8 +43,8 @@ operator fun JsonObject.set(key: String, value: Number) = addProperty(key, value
 
 operator fun JsonObject.set(key: String, value: JsonElement) = add(key, value)
 
-operator fun JsonElement.get(vararg keys: String): JsonElement {
-    var o = this
+operator fun JsonObject.get(vararg keys: String): JsonElement {
+    var o: JsonElement = this
     keys.forEach { o = o.obj[it] }
     return o
 }

@@ -1,6 +1,7 @@
 package com.uadaf.uadab
 
 import com.gt22.randomutils.Instances
+import com.gt22.uadam.utils.get
 import com.uadaf.uadab.utils.get
 import com.uadaf.uadab.utils.obj
 import com.uadaf.uadab.utils.str
@@ -22,7 +23,7 @@ object FrequentBash {
         }
         val map = mutableMapOf<String, String>()
         json.entrySet().forEach { (name, data) ->
-            map[name.toLowerCase()] = typeToUrl[data["type"].str]!!.format(data["id"].str)
+            map[name.toLowerCase()] = typeToUrl[data["type"]?.str]!!.format(data["id"]!!.str)
         }
         map.toMap()
     }
