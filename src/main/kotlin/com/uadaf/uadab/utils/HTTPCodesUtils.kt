@@ -2,6 +2,7 @@ package com.uadaf.uadab.utils
 
 import com.google.gson.JsonElement
 import com.gt22.randomutils.Instances
+import com.uadaf.uadab.UADAB
 import kotlinx.coroutines.experimental.launch
 import org.apache.http.client.methods.HttpGet
 
@@ -32,7 +33,7 @@ object HTTPCodesUtils {
                 }.sortedBy { it.code }
                 onSuccess(codesData)
             }catch (e: Exception) {
-                e.printStackTrace()
+                UADAB.log.log(e)
                 onError(e.message ?: e::class.java.simpleName)
             }
         }

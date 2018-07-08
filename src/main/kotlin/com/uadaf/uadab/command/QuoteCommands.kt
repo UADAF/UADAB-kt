@@ -164,7 +164,7 @@ object QuoteCommands : ICommandList {
                 }
                 createEmbeds(quotes).forEach(e::reply)
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                UADAB.log.log(ex)
             }
         }
     }
