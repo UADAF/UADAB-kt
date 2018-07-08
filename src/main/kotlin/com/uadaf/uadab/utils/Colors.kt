@@ -1,36 +1,30 @@
 package com.uadaf.uadab.utils
 
 import com.gt22.randomutils.Instances
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.CompletableDeferred
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.async
 import org.apache.http.client.methods.HttpGet
 import java.awt.Color
-import java.util.function.Function
 import java.util.stream.Collectors
 
-private var xkcdColors: Map<String, String> = emptyMap()
+private lateinit var xkcdColors: Map<String, String>
 
-fun getColors(onSuccess: (Map<String, String>) -> Unit, onError: (String) -> Unit) {
-    if (xkcdColors.isNotEmpty()) {
-        onSuccess(xkcdColors)
+fun getColors(): Deferred<Map<String, String>> {
+    return if (::xkcdColors.isInitialized) {
+        CompletableDeferred(xkcdColors)
     } else {
-        loadColors(onSuccess, onError)
+        async { loadColors() }
     }
 }
 
-private fun loadColors(onSuccess: (Map<String, String>) -> Unit, onError: (String) -> Unit) {
-    launch {
-        try {
-            xkcdColors = Instances.getHttpClient().execute(HttpGet("http://xkcd.com/color/rgb.txt")).entity.content.bufferedReader()
-                    .lines()
-                    .skip(1) //Skip license
-                    .map { it.split("\t") }
-                    .collect(Collectors.toMap<List<String>, String, String>({it[0]}, {it[1]}))
-            onSuccess(xkcdColors)
-        }catch (e: Exception) {
-            e.printStackTrace()
-            onError(e.message ?: e::class.java.simpleName)
-        }
-    }
+private fun loadColors(): Map<String, String> {
+    xkcdColors = Instances.getHttpClient().execute(HttpGet("http://xkcd.com/color/rgb.txt")).entity.content.bufferedReader()
+            .lines()
+            .skip(1) //Skip license
+            .map { it.split("\t") }
+            .collect(Collectors.toMap<List<String>, String, String>({ it[0] }, { it[1] }))
+    return xkcdColors
 }
 
 val poiColors: Map<String, Color> by lazy {
