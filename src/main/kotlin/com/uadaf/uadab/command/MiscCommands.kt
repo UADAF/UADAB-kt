@@ -25,19 +25,22 @@ object MiscCommands : ICommandList {
                 return@command
             }
             val (size, color1, color2) = args
-            val primaryColor = extractColor(color1)
-            if(primaryColor == null) {
-                reply(it, RED, "Invalid color '$color1", "Color is '#XXXXXX' or 'xkcd:color name' or 'poi:color name'", cat.img)
-                return@command
+            val onError: (Boolean, String) -> Unit =  { isException, message ->
+                if(isException) {
+                    reply(it, RED, "Sorry!", "I can't load these colors because of exception: $message", cat.img)
+                }else {
+                    reply(it, RED, "Invalid color '$color1", "Color is '#XXXXXX' or 'xkcd:color name' or 'poi:color name'", cat.img)
+                }
             }
-            val secondaryColor = extractColor(color2)
-            if(secondaryColor == null) {
-                reply(it, RED, "Invalid color '$color2'", "Color is '#XXXXXX' or 'xkcd:color name' or 'poi:color name'", cat.img)
-                return@command
-            }
-            val img = Boxes.getBox(size.toInt(), size.toInt(), primaryColor, secondaryColor)
-            ImageIO.write(img, "PNG", File("box.png"))
-            it.reply(File("box.png"), "box.png")
+            extractColor(color1, { primaryColor ->
+                extractColor(color2, { secondaryColor ->
+                    val img = Boxes.getBox(size.toInt(), size.toInt(), primaryColor, secondaryColor)
+                    val file = File("box.png")
+                    ImageIO.write(img, "PNG", file)
+                    it.reply(file, "box.png")
+                    file.delete()
+                }, onError)
+            },onError)
         }.setArguments("%width%, %height%, %color1%, %color2%").build(), command("explain", "Explains something") { e ->
             if(e.args.toLowerCase() == "list") {
                 var embed = EmbedBuilder()
@@ -119,20 +122,31 @@ object MiscCommands : ICommandList {
         }.setArguments("%code%").setAllowedClasses(EVERYONE).build())
     }
 
-    fun extractColor(c: String): Color? {
-        return if (c.startsWith("#")) {
-            Color(c.substring(1).toInt(16))
-        } else if(c.startsWith("xkcd:")) {
-            val name = c.substring(5)
-            if(name in xkcdColors) {
-                extractColor(xkcdColors[name]!!)
-            } else {
-                null
+    fun extractColor(c: String, onSuccess: (Color) -> Unit, onError: (Boolean, String) -> Unit) {
+        when {
+            c.startsWith("#") -> {
+                onSuccess(Color(c.substring(1).toInt(16)))
+                return
             }
-        } else if(c.startsWith("poi:")) {
-            poiColors[c.substring(4)]
-        } else {
-            null
+            c.startsWith("xkcd:") -> {
+                val name = c.substring(5)
+                getColors({colors ->
+                    if(name in colors) {
+                        extractColor(colors[name]!!, onSuccess, onError)
+                    } else {
+                        onError(false, "Color not found")
+                    }
+                }, { error -> onError(true, error) })
+            }
+            c.startsWith("poi:") ->  {
+                val name = c.substring(4)
+                if(name in poiColors) {
+                    onSuccess(poiColors[name]!!)
+                } else {
+                    onError(false, "Color not found")
+                }
+            }
+            else -> onError(false, "Color not found")
         }
     }
 
