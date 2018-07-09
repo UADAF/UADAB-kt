@@ -36,7 +36,7 @@ object Web : ListenerAdapter(), IExtension {
 
     override fun getEndpoint(): String = "web"
 
-    private var currentSession: Session? = null
+    var currentSession: Session? = null
 
     @OnWebSocketConnect
     fun onConnect(s: Session) {
