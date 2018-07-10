@@ -1,6 +1,5 @@
 package com.uadaf.uadab.command
 
-import com.gt22.randomutils.Instances
 import com.jagrosh.jdautilities.command.Command
 import com.jagrosh.jdautilities.command.CommandEvent
 import com.uadaf.uadab.UADAB
@@ -136,30 +135,18 @@ object ClassificationCommands : ICommandList {
 
 
     private fun getUser(name: String, e: CommandEvent): UADABUser? {
-        if (name.matches("\\d{3}-\\d{2}-\\d{4}".toRegex())) {
-            var ssn = 0
-            ssn += Integer.parseInt(name.substring(0, 3)) * 1000000
-            ssn += Integer.parseInt(name.substring(4, 6)) * 10000
-            ssn += Integer.parseInt(name.substring(7))
-            return Users[ssn]
+        val ret = Getters.getUser(name)
+        if (ret.state === Wrapper.WrapperState.NONE) {
+            e.reply(EmbedUtils.create(RED, "Cannot find user '$name'", "Really can't...", Classification.UNKNOWN.getImg()))
+            e.reactWarning()
+            return null
         }
-        var ret = Users[name]
-        if (ret == null) {
-            val user = Getters.getUser(name)
-            if (user.state === Wrapper.WrapperState.NONE) {
-                e.reply(EmbedUtils.create(RED, "Cannot find user '$name'", "Really can't...", Classification.UNKNOWN.getImg()))
-                e.reactWarning()
-                return null
-            }
-            if (user.state === Wrapper.WrapperState.MULTI) {
-                e.reply(EmbedUtils.create(RED, "Too many users!!!", "'Too many' is more than one", Classification.UNKNOWN.getImg()))
-                e.reactWarning()
-                return null
-            }
-
-            ret = Users[user.getSingle()!!]
+        if (ret.state === Wrapper.WrapperState.MULTI) {
+            e.reply(EmbedUtils.create(RED, "Too many users!!!", "'Too many' is more than one", Classification.UNKNOWN.getImg()))
+            e.reactWarning()
+            return null
         }
-        return ret
+        return ret.getSingle()
     }
 
 

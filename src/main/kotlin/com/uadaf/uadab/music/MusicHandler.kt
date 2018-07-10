@@ -117,7 +117,7 @@ object MusicHandler {
         var msg: String? = null
         val player = getGuildAudioPlayer(guild)
         val addFunc = if (args.first) player.scheduler.queue::addFirst else player.scheduler::queue
-        playerManager.loadItem(name.replace("//", "/"), object : AudioLoadResultHandler {
+        playerManager.loadItem(if(name.startsWith("http")) name else name.replace("//", "/"), object : AudioLoadResultHandler {
             override fun loadFailed(exception: FriendlyException) {
                 result = LoadResult.FAIL
                 msg = exception.localizedMessage

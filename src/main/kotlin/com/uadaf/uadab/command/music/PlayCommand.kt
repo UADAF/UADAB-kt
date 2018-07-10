@@ -14,7 +14,7 @@ import com.uadaf.uadab.utils.random
 import net.dv8tion.jda.core.entities.MessageReaction
 import java.awt.Color
 
-object PlayCommand : AdvancedCommand({PlayCommand.action(it)}, {_, e -> PlayCommand.denied(e)}, ASSETS, false) {
+object PlayCommand : AdvancedCommand({ PlayCommand.action(it) }, { _, e -> PlayCommand.denied(e) }, ASSETS, false) {
 
     init {
         name = "play"
@@ -67,53 +67,52 @@ object PlayCommand : AdvancedCommand({PlayCommand.action(it)}, {_, e -> PlayComm
         val musicArgs = MusicHandler.MusicArgs(
                 count, noRepeat, all, first
         )
-        if(args.isEmpty()) {
+        if (args.isEmpty()) {
             handleLoad(e, MusicHandler.load(MusicHandler.context, e.guild, musicArgs))
             return
         }
-        val variants = MusicHandler.getVariants(args)
-
-        val ret = when (variants.size) {
-            0 -> NOT_FOUND to args
-            1 -> {
-                if (args.startsWith("http")) {
-                    MusicHandler.loadDirect(args, e.guild, musicArgs)
-                } else {
+        val ret = if (args.startsWith("http")) {
+            MusicHandler.loadDirect(args, e.guild, musicArgs)
+        } else {
+            val variants = MusicHandler.getVariants(args)
+            when (variants.size) {
+                0 -> NOT_FOUND to args
+                1 -> {
                     MusicHandler.load(
                             variants[0],
                             e.guild,
                             musicArgs
                     )
                 }
-            }
-            in 2..9 -> {
-                e.channel.sendMessage(EmbedUtils.create(Color.YELLOW, "Select track", formatVariants(variants), MusicCommands.cat.img)).queue {
-                    ReactionHandler.registerHandler { msg, reaction, user ->
-                        if (it.idLong == msg.idLong && user != UADAB.bot.selfUser) {
-                            val name = reaction.reactionEmote.name
-                            if (name.length > 1 && name[1] == '\u20e3') { //u20e3 - number emoji
-                                val num = name[0]
-                                if (num in '1'..'9') {
-                                    handleLoad(e, MusicHandler.load(variants[num.toString().toInt() - 1], e.guild, musicArgs))
-                                    msg.reactions.filter(MessageReaction::isSelf)
-                                            .forEach { it.removeReaction().queue() }
-                                    return@registerHandler true
+                in 2..9 -> {
+                    e.channel.sendMessage(EmbedUtils.create(Color.YELLOW, "Select track", formatVariants(variants), MusicCommands.cat.img)).queue {
+                        ReactionHandler.registerHandler { msg, reaction, user ->
+                            if (it.idLong == msg.idLong && user != UADAB.bot.selfUser) {
+                                val name = reaction.reactionEmote.name
+                                if (name.length > 1 && name[1] == '\u20e3') { //u20e3 - number emoji
+                                    val num = name[0]
+                                    if (num in '1'..'9') {
+                                        handleLoad(e, MusicHandler.load(variants[num.toString().toInt() - 1], e.guild, musicArgs))
+                                        msg.reactions.filter(MessageReaction::isSelf)
+                                                .forEach { it.removeReaction().queue() }
+                                        return@registerHandler true
+                                    }
                                 }
                             }
+                            false
                         }
-                        false
+                        for (j in 1..variants.size) {
+                            it.addReaction("$j\u20e3").complete() //$num + u20e3 - number emoji
+                        }
                     }
-                    for (j in 1..variants.size) {
-                        it.addReaction("$j\u20e3").complete() //$num + u20e3 - number emoji
-                    }
+                    return
                 }
-                return
+                else -> MusicHandler.load(
+                        variants.random(Instances.getRand())!!,
+                        e.guild,
+                        musicArgs
+                )
             }
-            else -> MusicHandler.load(
-                    variants.random(Instances.getRand())!!,
-                    e.guild,
-                    musicArgs
-            )
         }
         handleLoad(e, ret)
     }
@@ -122,7 +121,7 @@ object PlayCommand : AdvancedCommand({PlayCommand.action(it)}, {_, e -> PlayComm
         e.reply(EmbedUtils.create(Color.RED, "You shall not play!", "", MusicCommands.cat.img))
     }
 
-    private fun type(data: BaseData) = when(data) {
+    private fun type(data: BaseData) = when (data) {
         is Song -> "Song"
         is Album -> "Album"
         is Author -> "Author"
@@ -133,9 +132,9 @@ object PlayCommand : AdvancedCommand({PlayCommand.action(it)}, {_, e -> PlayComm
     fun formatData(data: BaseData): String {
         var ret = data.title
         var cur = data
-        while(cur.parent !is MusicContext) {
+        while (cur.parent !is MusicContext) {
             val title = cur.parent!!.title
-            if(title.isNotEmpty()) {
+            if (title.isNotEmpty()) {
                 ret = "$title/$ret"
             }
             cur = cur.parent!!

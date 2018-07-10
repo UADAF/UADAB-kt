@@ -9,10 +9,10 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.AdvancedCommand
 import com.uadaf.uadab.command.base.ICommandList
-import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.users.*
 import com.uadaf.uadab.utils.EmbedUtils
 import com.uadaf.uadab.utils.getters.Getters
+import com.uadaf.uadab.utils.paginatedEmbed
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
@@ -63,81 +63,72 @@ object SystemCommands : ICommandList {
                 }
             }.setHidden().build(),
             command("token", "Create bot-api token") { e ->
-                val private = async { e.author.openPrivateChannel().complete() }
                 val token = createToken()
-                launch {
-                    val usr = Users[e.author]
-                    try {
-                        if (hasToken(usr.name)) {
-                            private.await().sendMessage(
-                                    EmbedUtils.create(RED, "Error",
-                                            "You already have token," +
-                                                    " run 'token regen' to explicitly recreate it", cat.img)).queue()
-                        } else {
-                            INSERT_TOKEN.setString(1, usr.name)
-                            INSERT_TOKEN.setString(2, token)
-                            INSERT_TOKEN.execute()
-                            private.await().sendMessage(EmbedUtils.create(GREEN, "Your token",
-                                    token, cat.img)).queue()
+                val usr = Users[e.author]
+                e.replyInDm(
+                        try {
+                            if (hasToken(usr.name)) {
+                                EmbedUtils.create(RED, "Error",
+                                        "You already have token\n Run 'token regen' to explicitly recreate it", cat.img)
+                            } else {
+                                INSERT_TOKEN.setString(1, usr.name)
+                                INSERT_TOKEN.setString(2, token)
+                                INSERT_TOKEN.execute()
+                                EmbedUtils.create(GREEN, "Your token", token, cat.img)
 
+                            }
+                        } catch (ex: SQLException) {
+                            EmbedUtils.create(RED, "Something went wrong",
+                                    ex.localizedMessage, cat.img)
                         }
-                    } catch (ex: SQLException) {
-                        private.await().sendMessage(EmbedUtils.create(RED, "Something went wrong",
-                                ex.localizedMessage, cat.img))
-                    }
-                }
+                )
             }.setAllowedClasses(ADMIN_OR_INTERFACE).setChildren(
                     command("delete", "Delete someone's token. Admin only") { e ->
-                        val private = async { e.author.openPrivateChannel().complete() }
                         val name = e.args
-                        val discUsr = Getters.getUser(name).getSingle()
-                        val usr = if(discUsr == null) {
-                            Users[e.args]
-                        } else {
-                            Users[discUsr]
-                        }
+                        val usr = Getters.getUser(name).getSingle()
                         launch {
-                            if (usr == null) {
-                                private.await().sendMessage(EmbedUtils.create(RED, "Error",
-                                        "User not found", cat.img)).queue()
-                            } else {
-                                try {
-                                    if (hasToken(usr.name)) {
-                                        DELETE_TOKEN.setString(1, usr.name)
-                                        DELETE_TOKEN.execute()
-                                        private.await().sendMessage(EmbedUtils.create(GREEN, "Success",
-                                                "Token for ${usr.name} deleted", cat.img)).queue()
+                            e.replyInDm(
+                                    if (usr == null) {
+                                        EmbedUtils.create(RED, "Error", "User not found", cat.img)
                                     } else {
-                                        private.await().sendMessage(EmbedUtils.create(RED, "Error",
-                                                "User have no token", cat.img)).queue()
+                                        try {
+                                            if (hasToken(usr.name)) {
+                                                DELETE_TOKEN.setString(1, usr.name)
+                                                DELETE_TOKEN.execute()
+                                                EmbedUtils.create(GREEN, "Success",
+                                                        "Token for ${usr.name} deleted", cat.img)
+                                            } else {
+                                                EmbedUtils.create(RED, "Error",
+                                                        "User have no token", cat.img)
+                                            }
+                                        } catch (ex: SQLException) {
+                                            EmbedUtils.create(RED, "Something went wrong", ex.localizedMessage,
+                                                    cat.img)
+                                        }
                                     }
-                                } catch (ex: SQLException) {
-                                    private.await().sendMessage(EmbedUtils.create(RED, "Something went wrong",
-                                            ex.localizedMessage, cat.img))
-                                }
-                            }
+                            )
                         }
                     }.setAllowedClasses(ADMIN_ONLY).setOnDenied { _, _ -> }.setHidden().build(),
                     command("regen", "Recreates you token") { e ->
-                        val private = async { e.author.openPrivateChannel().complete() }
                         val usr = Users[e.author]
                         launch {
-                            try {
-                                if (hasToken(usr.name)) {
-                                    val token = createToken()
-                                    UPDATE_TOKEN.setString(1, token)
-                                    UPDATE_TOKEN.setString(2, usr.name)
-                                    UPDATE_TOKEN.execute()
-                                    private.await().sendMessage(EmbedUtils.create(GREEN, "Your new token",
-                                            token, cat.img)).queue()
-                                } else {
-                                    private.await().sendMessage(EmbedUtils.create(RED, "Error",
-                                            "You have no token, run 'token' to create it", cat.img)).queue()
-                                }
-                            } catch (ex: SQLException) {
-                                private.await().sendMessage(EmbedUtils.create(RED, "Something went wrong",
-                                        ex.localizedMessage, cat.img))
-                            }
+                            e.replyInDm(
+                                    try {
+                                        if (hasToken(usr.name)) {
+                                            val token = createToken()
+                                            UPDATE_TOKEN.setString(1, token)
+                                            UPDATE_TOKEN.setString(2, usr.name)
+                                            UPDATE_TOKEN.execute()
+                                            EmbedUtils.create(GREEN, "Your new token", token, cat.img)
+                                        } else {
+                                            EmbedUtils.create(RED, "Error",
+                                                    "You have no token, run 'token' to create it", cat.img)
+                                        }
+                                    } catch (ex: SQLException) {
+                                        EmbedUtils.create(RED, "Something went wrong",
+                                                ex.localizedMessage, cat.img)
+                                    }
+                            )
                         }
                     }.setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _, _ -> }.setHidden().build()
             ).setOnDenied { _, _ -> }.setHidden().build(),
@@ -172,13 +163,10 @@ object SystemCommands : ICommandList {
                     sendGeneralHelp(e)
                 } else {
                     val name = e.args
-                    val cmd = UADAB.commands.commands.parallelStream()
+                    val c = UADAB.commands.commands
                             .filter { it is AdvancedCommand }
-                            .filter { it.name == name }
-                            .limit(1)
-                            .findAny()
-                    if (cmd.isPresent) {
-                        val c = cmd.get()
+                            .filter { it.name == name }.getOrNull(0)
+                    if (c != null) {
                         val prefix = UADAB.commands.prefix
                         val embed = EmbedBuilder()
                                 .setTitle("Command: ${c.name}", null)
@@ -225,27 +213,25 @@ object SystemCommands : ICommandList {
     }
 
     private fun sendGeneralHelp(e: CommandEvent) {
-        var embed: EmbedBuilder? = null
-        var cat: AdvancedCategory? = null
         val prefix = UADAB.commands.prefix
-        for (cmd in UADAB.commands.commands) {
-            if (cmd is AdvancedCommand && (!cmd.isOwnerCommand() || e.isOwner) && !cmd.hidden) {
-                if (cat != cmd.getCategory()) {
-                    cat = cmd.getCategory() as AdvancedCategory?
-                    if (embed != null) {
-                        e.reply(embed.build())
+        var cat = AdvancedCategory("PLACEHOLDER", BLACK, "")
+        paginatedEmbed {
+            sender = e::reply
+            UADAB.commands.commands.forEach { cmd ->
+                if (cmd is AdvancedCommand && !cmd.hidden) {
+                    if (cat != cmd.category) {
+                        cat = cmd.category as AdvancedCategory
+                        send()
+                        color = cat.color
+                        thumbnail = cat.img
+                        title = cat.name
                     }
-                    embed = EmbedBuilder()
-                    embed.setColor(cat!!.color)
-                    embed.setThumbnail(cat.img)
-                    embed.setTitle(cat.name, null)
+                    field {
+                        name = "$prefix ${cmd.name} ${cmd.arguments}"
+                        value = cmd.help
+                    }
                 }
-                assert(embed != null) //If embed not initialized, in category init something went wrong
-                embed!!.addField("$prefix ${cmd.name} ${cmd.arguments}", cmd.help, false)
             }
-        }
-        embed?.let {
-            e.reply(it.build())
         }
         e.reactSuccess()
     }

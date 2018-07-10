@@ -16,7 +16,7 @@ class Wrapper<T: Any> {
         NONE
     }
 
-    init {
+    constructor() {
         none()
     }
 

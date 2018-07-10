@@ -6,7 +6,9 @@ import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.users.EVERYONE
 import com.uadaf.uadab.utils.*
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.MessageEmbed
 import java.awt.Color
@@ -21,7 +23,7 @@ object MiscCommands : ICommandList {
         return arrayOf(command("box", "Generate Machine-Box") {
             val args = it.args.split(", ")
             if (args.size != 3) {
-                reply(it, RED, "Invalid args", "sudo box %size%, %color1%, %color2%\n color is '#XXXXXX' or 'xkcd:color name'", cat.img)
+                reply(it, RED, "Invalid args", "sudo box i%size%, %color1%, %color2%\n color is '#XXXXXX' or 'xkcd:color name'", cat.img)
                 return@command
             }
             val (size, color1, color2) = args
@@ -45,25 +47,19 @@ object MiscCommands : ICommandList {
                 ImageIO.write(img, "PNG", os)
                 it.textChannel.sendFile(os.toByteArray(), "box.png").queue()
             }
-        }.setArguments("%width%, %height%, %color1%, %color2%").build(), command("explain", "Explains something") { e ->
+        }.setArguments("i%size%, %color1%, %color2%").build(), command("explain", "Explains something") { e ->
             if (e.args.toLowerCase() == "list") {
-                var embed = EmbedBuilder()
-                        .setColor(cat.color)
-                        .setThumbnail(cat.img)
-                        .setTitle("Things-to-explain-list")
-                FrequentBash.fb.keys.forEach {
-                    if (embed.descriptionBuilder.length + it.length >= MessageEmbed.TEXT_MAX_LENGTH) {
-                        e.reply(embed.build())
-                        embed = EmbedBuilder()
-                                .setColor(cat.color)
-                                .setThumbnail(cat.img)
-                                .setTitle("Things-to-explain-list")
-                    } else {
-                        embed.appendDescription(it).appendDescription("\n")
+                paginatedEmbed {
+                    sender = e::reply
+                    pattern {
+                        color = cat.color
+                        thumbnail = cat.img
+                        title = "Thins-to-explain-list"
                     }
-                }
-                if (embed.descriptionBuilder.isNotEmpty()) {
-                    e.reply(embed.build())
+                    FrequentBash.fb.keys.forEach {
+                        +it
+                        +"\n"
+                    }
                 }
                 e.reactSuccess()
             } else {
@@ -77,53 +73,64 @@ object MiscCommands : ICommandList {
                 }
             }
         }.setArguments("list|%name%").setAllowedClasses(EVERYONE).build(), command("http", "Get description of HTTP Status codes") { e ->
-            HTTPCodesUtils.getDataSet({ codes ->
-                var args = e.args
-                val description = if ("-nd" in args) {
-                    args = args.replaceFirst("-nd", "")
-                    false
-                } else true
-                if (args.isBlank()) {
-                    var embed = EmbedBuilder().setColor(cat.color).setTitle("All HTTP Status codes").setThumbnail(cat.img)
-                    codes.forEach {
-                        if (embed.fields.count() > 23) {
-                            e.reply(embed.build())
-                            embed = EmbedBuilder().setColor(cat.color).setTitle("All HTTP Status codes").setThumbnail(cat.img)
-                        } else {
-                            embed.addField("${it.code} - ${it.phrase}", if (description) it.description else "", false)
-                        }
-                    }
-                    if (embed.fields.isNotEmpty())
-                        e.reply(embed.build())
+            launch {
+                val aCodes = HTTPCodesUtils.getDataSet()
+                aCodes.join()
+                if (aCodes.isCompletedExceptionally) {
+                    e.reply(EmbedUtils.create(RED, "This is the Server error. I'm sorry",
+                            "Do you understand something?\n\n${aCodes.getCompletionExceptionOrNull()}", cat.img))
                 } else {
-                    val requested = args.trim().split(" ").map(String::trim).distinct()
-                    val invalid = requested.filter { it.toIntOrNull() == null || !codes.any { c -> it.toInt() == c.code } }
-                    val valid = requested.filter { it.toIntOrNull() != null }.map(String::toInt)
-                    var embed = EmbedBuilder().setTitle("Some HTTP Status codes you need").setColor(cat.color).setThumbnail(cat.img)
-                    valid.flatMap { codes.filter { c -> it == c.code } }.forEach {
-                        if (embed.fields.count() > 23) {
-                            e.reply(embed.build())
-                            embed = EmbedBuilder().setTitle("Some HTTP Status codes you need").setColor(cat.color).setThumbnail(cat.img)
-                        } else {
-                            embed.addField("${it.code} - ${it.phrase}", if (description) it.description else "", false)
-                        }
-                    }
-                    if (invalid.isNotEmpty()) {
-                        if (embed.fields.count() > 23) {
-                            e.reply(embed.build())
-                            e.reply(EmbedUtils.create(cat.color, "Some of these codes I couldn't recognize.", invalid.reduce { c1, c2 -> "$c1, $c2" }, cat.img))
-                        } else {
-                            embed.addField("Some of these codes I couldn't recognize.", invalid.reduce { c1, c2 -> "$c1, $c2" }, false)
-                            e.reply(embed.build())
+                    val codes = aCodes.getCompleted()
+                    var args = e.args
+                    val description = if ("-nd" in args) {
+                        args = args.replaceFirst("-nd", "")
+                        false
+                    } else true
+                    if (args.isBlank()) {
+                        paginatedEmbed {
+                            sender = e::reply
+                            pattern {
+                                color = cat.color
+                                thumbnail = cat.img
+                                title = "All HTTP Status codes"
+                            }
+                            codes.values.forEach { c ->
+                                formatCode(c, description)
+                            }
                         }
                     } else {
-                        e.reply(embed.build())
+                        val requested = args.trim().split(" ").map(String::trim).distinct().map(String::toIntOrNull)
+                        val invalid = requested.filter { it !in codes }
+                        val valid = requested.filter { it in codes }.map { codes[it] }
+
+                        paginatedEmbed {
+                            sender = e::reply
+                            pattern {
+                                color = cat.color
+                                thumbnail = cat.img
+                                title = if (invalid.isEmpty()) "HTTP Status codes you need" else "Some HTTP Status codes you need"
+                            }
+                            valid.forEach { c ->
+                                formatCode(c!!, description)
+                            }
+                            if (invalid.isNotEmpty()) {
+                                field {
+                                    name = "Some of these codes I couldn't recognize."
+                                    value = invalid.joinToString(", ")
+                                }
+                            }
+                        }
                     }
                 }
-            }, { error ->
-                e.reply(EmbedUtils.create(RED, "This is the Server error. I'm sorry", "Do you understand something?\n\n$error", cat.img))
-            })
+            }
         }.setArguments("%code%").setAllowedClasses(EVERYONE).build())
+    }
+
+    private fun PaginatedEmbedCreater.formatCode(c: HTTPStatusCode, description: Boolean) {
+        field {
+            name = "${c.code} - ${c.phrase}"
+            value = if (description) c.description else ""
+        }
     }
 
     fun extractColor(c: String): Deferred<Color> {
@@ -133,9 +140,9 @@ object MiscCommands : ICommandList {
                     Color(c.substring(1).toInt(16))
                 }
                 c.startsWith("xkcd:") -> {
-                    val name = c.substring(5)
-                    val colors = getColors().await()
-                    colors[name]?.let(MiscCommands::extractColor)?.await() ?: throw IllegalArgumentException(c)
+                    val colors = getXkcdColors()
+                    val name = c.removePrefix("xkcd:")
+                    colors.await()[name] ?: throw IllegalArgumentException(c)
                 }
                 c.startsWith("poi:") -> {
                     val name = c.substring(4)

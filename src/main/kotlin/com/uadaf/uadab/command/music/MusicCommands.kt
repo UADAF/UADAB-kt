@@ -7,6 +7,7 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.CommandBuilder
 import com.uadaf.uadab.command.base.ICommandList
+import com.uadaf.uadab.utils.paginatedEmbed
 import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.users.ASSETS
 import java.awt.Color
@@ -84,45 +85,53 @@ object MusicCommands : ICommandList {
             e.reactSuccess()
         }.setOnDenied { _, e -> reply(e, RED, "You shall not skip!", "", cat.img) }.setAllowedClasses(ASSETS).setArguments("[i%num%]").build(), command("playlist", "Shows playlist") { e ->
             val g = e.guild
-            var playlistBuilder = StringBuilder()
             val size = MusicHandler.playlistSize(g)
             if (size == 0) {
                 e.reply("Playlist empty")
                 e.reactWarning()
                 return@command
             }
-            var playlistNum = 1
-            var totalTime = 0L
-            //Manually add first element to add percents
-            val current = MusicHandler.currentTrack(g)!!
-            totalTime += current.duration - current.position
-            addPlaylistElement(playlistBuilder, 1, current)
-            playlistBuilder.append(' ').append(current.position * 100 / current.duration).append('%')
-
-
-            MusicHandler.getPlaylist(g).forEachIndexed { i, track ->
-                totalTime += current.duration
-                addPlaylistElement(playlistBuilder.append('\n'), i + 2, track)
-                if (playlistBuilder.length > 1800) {
-                    sendPlaylist(playlistBuilder.toString(), playlistNum++, e)
-                    playlistBuilder = StringBuilder()
-                }
-            }
-            playlistBuilder.append("\nTotal time: ${playlistTimeFormat.format(Date(totalTime))}")
-            if (playlistBuilder.isNotEmpty()) {
-                sendPlaylist(playlistBuilder.toString(), if (playlistNum == 1) -1 else playlistNum, e)
-            }
+            playlist(MusicHandler.currentTrack(g)!!, MusicHandler.getPlaylist(g), e)
             e.reactSuccess()
         }.build())
     }
 
 
+    fun playlist(cur: AudioTrack, playlist: List<AudioTrack>, e: CommandEvent) {
+        var totalTime = 0L
+        paginatedEmbed {
+            sender = e::reply
+            pattern {
+                color = GREEN
+                thumbnail = cat.img
+            }
+            preSend { overflow ->
+                title = if(overflow || pageId != 0) { //If we had an overflow at least once - label part
+                    "Playlist part ${this@paginatedEmbed.pageId + 1}"
+                } else {
+                    "Playlist"
+                }
+            }
+            totalTime += cur.duration - cur.position
+            +"1: ${formatTrack(cur)} ${cur.position * 100 / cur.duration}%"
+            playlist.forEachIndexed { i, track ->
+                totalTime += track.duration
+                +"${i + 1}: ${formatTrack(track)}\n"
+            }
+            +"Total time: ${playlistTimeFormat.format(Date(totalTime))}"
+        }
+    }
+
 
     private fun formatTrack(name: String): String {
-        if(name.startsWith("http")) {
+        if (name.startsWith("http")) {
             return name
         }
         return PlayCommand.formatData(MusicHandler.getVariants(name.removePrefix("Music/"))[0])
+    }
+
+    private fun formatTrack(track: AudioTrack): String {
+        return formatTrack(track.identifier)
     }
 
     private fun addPlaylistElement(playlist: StringBuilder, pos: Int, track: AudioTrack) {
@@ -134,7 +143,6 @@ object MusicCommands : ICommandList {
         val title = if (part == -1) "Playlist" else "Playlist part $part"
         reply(e, GREEN, title, playlist, cat.img)
     }
-
 
 
 }

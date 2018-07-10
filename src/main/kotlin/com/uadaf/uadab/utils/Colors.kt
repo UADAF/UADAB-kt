@@ -8,9 +8,9 @@ import org.apache.http.client.methods.HttpGet
 import java.awt.Color
 import java.util.stream.Collectors
 
-private lateinit var xkcdColors: Map<String, String>
+private lateinit var xkcdColors: Map<String, Color>
 
-fun getColors(): Deferred<Map<String, String>> {
+fun getXkcdColors(): Deferred<Map<String, Color>> {
     return if (::xkcdColors.isInitialized) {
         CompletableDeferred(xkcdColors)
     } else {
@@ -18,12 +18,12 @@ fun getColors(): Deferred<Map<String, String>> {
     }
 }
 
-private fun loadColors(): Map<String, String> {
+private fun loadColors(): Map<String, Color> {
     xkcdColors = Instances.getHttpClient().execute(HttpGet("http://xkcd.com/color/rgb.txt")).entity.content.bufferedReader()
             .lines()
             .skip(1) //Skip license
             .map { it.split("\t") }
-            .collect(Collectors.toMap<List<String>, String, String>({ it[0] }, { it[1] }))
+            .collect(Collectors.toMap<List<String>, String, Color>({ it[0] }, { Color(it[1].removePrefix("#").toInt(16)) }))
     return xkcdColors
 }
 
