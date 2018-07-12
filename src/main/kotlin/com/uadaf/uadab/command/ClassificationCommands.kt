@@ -12,7 +12,7 @@ import com.uadaf.uadab.users.Users
 import com.uadaf.uadab.utils.EmbedUtils
 import com.uadaf.uadab.utils.getters.Getters
 import com.uadaf.uadab.utils.getters.Wrapper
-import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.async as kAsync
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.GuildVoiceState
@@ -22,6 +22,7 @@ import java.awt.Color.RED
 import java.awt.Color.YELLOW
 import java.util.regex.Pattern
 
+
 object ClassificationCommands : ICommandList {
     override val cat = AdvancedCategory("Classification", Color(0x204020), Classification.UNKNOWN.getImg())
 
@@ -29,15 +30,15 @@ object ClassificationCommands : ICommandList {
     private val classSet = Pattern.compile("^(.+):(.+)$")
 
     override fun init(): Array<Command> {
-        return arrayOf(command("monitor", "Displays info about user") { e ->
-            val usr = getUser(e.args, e) ?: return@command
-            val author = Users[e]
+        return arrayOf(command("monitor", "Displays info about user") {
+            val usr = getUser(args, this) ?: return@command
+            val author = Users[this]
 
             val cls = usr.classification
             val shouldContact = (cls == Classification.ADMIN || cls == Classification.SYSTEM) && (author.classification !in ADMIN_OR_INTERFACE)
             if (shouldContact) {
-                reply(e, RED, "No, no, no", "Monitor request denied" + if (shouldContact) "\nContacting Admin" else "", Classification.UNKNOWN.getImg())
-                e.reactWarning()
+                reply(RED, "No, no, no", "Monitor request denied" + if (shouldContact) "\nContacting Admin" else "", Classification.UNKNOWN.getImg())
+                reactWarning()
                 if (shouldContact) {
                     launch {
                         UADAB.contactAdmin(EmbedUtils.create(YELLOW,
@@ -54,16 +55,16 @@ object ClassificationCommands : ICommandList {
                 val img = usr.asyncGetAvatarWithClassUrl()
 
                 val memberInfo = UADAB.bot.getMutualGuilds(usr.discordUser).map { it.getMember(usr.discordUser) }
-                val roles = async {
+                val roles = kAsync {
                     memberInfo.flatMap(Member::getRoles).distinct().joinToString("\n") { "${it.guild.name}#${it.name}" }
                 }
-                val knownNames = async {
+                val knownNames = kAsync {
                     memberInfo.map(Member::getEffectiveName).distinct().joinToString("\n")
                 }
-                val onlineStatus = async {
+                val onlineStatus = kAsync {
                     memberInfo.first().onlineStatus.key.replace("dnd", "Do not disturb")
                 }
-                val voiceChannel = async {
+                val voiceChannel = kAsync {
                     memberInfo.stream()
                             .map(Member::getVoiceState)
                             .filter(GuildVoiceState::inVoiceChannel)
@@ -71,7 +72,7 @@ object ClassificationCommands : ICommandList {
                             .findAny()
                             .map { "${it.guild.name}#${it.name}" }.orElse("None")
                 }
-                e.reply(EmbedBuilder()
+                reply(EmbedBuilder()
                         .setTitle("Info about " + usr.name, null)
                         .addField("Classification", cls.name, true)
                         .addField("SSN", usr.ssn.getSSNString(false), true)
@@ -84,52 +85,53 @@ object ClassificationCommands : ICommandList {
                         .setColor(cls.color)
                         .setThumbnail(img.await())
                         .build())
-                e.reactSuccess()
+                reactSuccess()
             }
-        }.setAliases("mon").setArguments("%user% | %ssn%").build(), command("reclass", "Changes classification of specified user") { e ->
-            val matcher = classSet.matcher(e.args)
+        }.setAliases("mon").setArguments("%user% | %ssn%").build(), command("reclass", "Changes classification of specified user") {
+            val matcher = classSet.matcher(args)
             if (!matcher.matches() || matcher.groupCount() != 2) {
-                reply(e, RED, "Invalid args: '${e.args}'", "Args should be '(user:class)'", Classification.IRRELEVANT.getImg())
-                e.reactWarning()
+                reply(RED, "Invalid args: '$args'", "Args should be '(user:class)'", Classification.IRRELEVANT.getImg())
+                reactWarning()
                 return@command
             }
             val classification = Classification.getClassification(matcher.group(2), true)
             if (classification == null ||
                     classification == Classification.ADMIN || classification == Classification.SYSTEM) { //Hide internal classes
-                reply(e, RED, "Classification not found", "Classification '${matcher.group(2)}' not found", Classification.UNKNOWN.getImg())
+                reply(RED, "Classification not found", "Classification '${matcher.group(2)}' not found", Classification.UNKNOWN.getImg())
+                reactWarning()
                 return@command
             }
-            val usr = getUser(matcher.group(1), e) ?: return@command
+            val usr = getUser(matcher.group(1), this) ?: return@command
             usr.classification = classification
-            reply(e, classification.color, "Success", "Classification of ${usr.name} changed to ${classification.name}", usr.avatarWithClassUrl)
-            e.reactSuccess()
-        }.setArguments("%user%:%class%").setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _, e ->
-            reply(e, RED, "Permission denied", "Only Admin or Analog Interface can change classifications", Users[e].avatarWithClassUrl)
-            e.reactWarning()
-        }.build(), command("alias", "Add or remove alias for user") { e ->
-            reply(e, RED, "Invalid command", "User 'alias add' or 'alias remove'", Classification.IRRELEVANT.getImg())
-            e.reactWarning()
-        }.setChildren(command("add", "Adds alias") { e ->
-            val m = classSet.matcher(e.args)
+            reply(classification.color, "Success", "Classification of ${usr.name} changed to ${classification.name}", usr.avatarWithClassUrl)
+            reactSuccess()
+        }.setArguments("%user%:%class%").setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _ ->
+            reply(RED, "Permission denied", "Only Admin or Analog Interface can change classifications", Users[this].avatarWithClassUrl)
+            reactWarning()
+        }.build(), command("alias", "Add or remove alias for user") {
+            reply(RED, "Invalid command", "User 'alias add' or 'alias remove'", Classification.IRRELEVANT.getImg())
+            reactWarning()
+        }.setChildren(command("add", "Adds alias") {
+            val m = classSet.matcher(args)
             if (!m.matches() || m.groupCount() != 2) {
-                reply(e, RED, "Invalid args: '${e.args}'", "Args should be '(user:alias)'", Classification.IRRELEVANT.getImg())
-                e.reactWarning()
+                reply(RED, "Invalid args: '$args'", "Args should be '(user:alias)'", Classification.IRRELEVANT.getImg())
+                reactWarning()
                 return@command
             }
             val alias = m.group(2)
-            val usr = getUser(m.group(1), e) ?: return@command
+            val usr = getUser(m.group(1), this) ?: return@command
             usr.addAlias(alias)
-            reply(e, usr.classification.color, "Success", "Added alias '$alias' to user '${usr.name}'.", usr.avatarWithClassUrl)
-            e.reactSuccess()
+            reply(usr.classification.color, "Success", "Added alias '$alias' to user '${usr.name}'.", usr.avatarWithClassUrl)
+            reactSuccess()
         }.setArguments("%user%:%alias%").build(),
-                command("remove", "Removes alias") { e ->
-                    val usr = getUser(e.args, e) ?: return@command
-                    usr.removeAlias(e.args)
-                    reply(e, usr.classification.color, "Success", "Removed alias '${e.args}' from user '${usr.name}'.", usr.avatarWithClassUrl)
-                    e.reactSuccess()
-                }.setArguments("%alias%").build()).setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _, e ->
-            e.reply(EmbedUtils.create(RED, "Permission denied", "Only Admin or Analog Interface can change aliases", Users[e].avatarWithClassUrl))
-            e.reactWarning()
+                command("remove", "Removes alias") {
+                    val usr = getUser(args, this) ?: return@command
+                    usr.removeAlias(args)
+                    reply(usr.classification.color, "Success", "Removed alias '$args' from user '${usr.name}'.", usr.avatarWithClassUrl)
+                    reactSuccess()
+                }.setArguments("%alias%").build()).setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _ ->
+            reply(RED, "Permission denied", "Only Admin or Analog Interface can change aliases", Users[this].avatarWithClassUrl)
+            reactWarning()
         }.setArguments("(add %user%:%alias%)|(remove %alias%)").build())
     }
 

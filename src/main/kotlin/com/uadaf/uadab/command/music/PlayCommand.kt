@@ -14,7 +14,7 @@ import com.uadaf.uadab.utils.random
 import net.dv8tion.jda.core.entities.MessageReaction
 import java.awt.Color
 
-object PlayCommand : AdvancedCommand({ PlayCommand.action(it) }, { _, e -> PlayCommand.denied(e) }, ASSETS, false) {
+object PlayCommand : AdvancedCommand({ PlayCommand.action(this) }, { _ -> PlayCommand.denied(this) }, ASSETS, false) {
 
     init {
         name = "play"
@@ -48,12 +48,14 @@ object PlayCommand : AdvancedCommand({ PlayCommand.action(it) }, { _, e -> PlayC
                     try {
                         i++
                         if (i > a.lastIndex) {
-                            MusicCommands.reply(e, Color.RED, "Count not specified", "Specify count after '*'")
+                            e.reply(EmbedUtils.create(Color.RED, "Count not specified",
+                                    "Specify count after '*'", MusicCommands.cat.img))
                             return
                         }
                         count = Integer.parseInt(a[i])
                     } catch (ex: NumberFormatException) {
-                        MusicCommands.reply(e, Color.RED, "Invalid count", "Count should be a number", MusicCommands.cat.img)
+                        e.reply(EmbedUtils.create(Color.RED, "Invalid count",
+                                "Count should be a number", MusicCommands.cat.img))
                         return
                     }
                 }

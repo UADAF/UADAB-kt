@@ -39,70 +39,70 @@ object QuoteCommands : ICommandList {
         }
 
     override fun init(): Array<Command> {
-        return arrayOf(command("quote", "add ore get quote") { e ->
-            val args = e.args
+        return arrayOf(command("quote", "add ore get quote") {
+            val args = args
             try {
                 when {
                     args.isEmpty() -> //Random
-                        sendQuoteByPos(Instances.getRand().nextInt(totalQuotes) + 1, e)
+                        sendQuoteByPos(Instances.getRand().nextInt(totalQuotes) + 1, this)
 
                     args.matches("^\\d+$".toRegex()) -> //Position
-                        sendQuoteByPos(Integer.parseInt(args), e)
+                        sendQuoteByPos(Integer.parseInt(args), this)
 
                     args.matches("^\\d+:\\d+$".toRegex()) -> { //From : To
                         val fromto = args.split(":".toRegex(), 2)
-                        getQuotesFromTo(fromto[0], fromto[1], e)
+                        getQuotesFromTo(fromto[0], fromto[1], this)
                     }
 
                     args.matches("^\\* \\d+$".toRegex()) -> { //Count
-                        getQuoteCount(Integer.parseInt(args.substring(2)), e)
+                        getQuoteCount(Integer.parseInt(args.substring(2)), this)
                     }
 
                     else -> {
-                        reply(e, RED, "Invalid args", "Args should be '(add|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))'", cat.img)
-                        e.reactWarning()
+                        reply(RED, "Invalid args", "Args should be '(add|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))'", cat.img)
+                        reactWarning()
                         return@command
                     }
                 }
-                e.reactSuccess()
+                reactSuccess()
             } catch (e1: IOException) {
-                e.reply("Something went wrong: ${e1.localizedMessage}")
-                e.reactError()
+                reply("Something went wrong: ${e1.localizedMessage}")
+                reactError()
             } catch (e1: NumberFormatException) {
                 val m = NFENumberExtract.matcher(e1.message)
                 if (m.matches()) {
-                    e.reply("Invalid number '${m.group(1)}'")
+                    reply("Invalid number '${m.group(1)}'")
                 } else {
-                    e.reply(e1.message)
+                    reply(e1.message)
                 }
-                e.reactError()
+                reactError()
             }
         }.setArguments("(add|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))").setChildren(
-                command("add", "adds quote") { e ->
-                    val args = e.args.split(' ', limit = 2)
+                command("add", "adds quote") {
+                    val args = args.split(' ', limit = 2)
                     if (args.size != 2) {
-                        reply(e, RED, "Invalid args", "Args should be '%author% %quote%'", cat.img)
-                        e.reactError()
+                        reply(RED, "Invalid args", "Args should be '%author% %quote%'", cat.img)
+                        reactError()
                     }
                     launch {
                         try {
                             val r = Instances.getParser().parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                                     "task" to "ADD",
-                                    "addby" to e.member.user.name,
+                                    "addby" to member.user.name,
                                     "author" to args[0],
                                     "quote" to args[1],
                                     "key" to UADAB.config.QUOTER_KEY))
                                     .build().inputStream)).obj
                             if (r["error"].bln) {
-                                reply(e, RED, "Something went wrong:", r["msg"].str, cat.img)
-                                e.reactError()
+                                reply(RED, "Something went wrong:", r["msg"].str, cat.img)
+                                reactError()
                             } else {
-                                reply(e, cat.color, "Success", "", cat.img)
-                                e.reactSuccess()
+                                reply(cat.color, "Success", "", cat.img)
+                                reactSuccess()
                             }
                         } catch (e1: IOException) {
-                            reply(e, RED, "Something went wrong:", e1.localizedMessage, cat.img)
-                            e.reactWarning()
+                            reply(RED, "Something went wrong:", e1.localizedMessage, cat.img)
+                            reactWarning()
                         }
                     }
                 }.setAllowedClasses(ASSETS).setGuildOnly(false).setArguments("%author% %quote%").build()

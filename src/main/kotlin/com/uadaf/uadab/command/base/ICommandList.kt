@@ -10,16 +10,16 @@ interface ICommandList {
     val cat: AdvancedCategory
     fun init(): Array<Command>
 
-    fun command(name: String, help: String, action: (CommandEvent) -> Unit): CommandBuilder {
+    fun command(name: String, help: String, action: CommandEvent.() -> Unit): CommandBuilder {
         return CommandBuilder().setName(name).setHelp(help).setAction(action).setCategory(cat)
     }
 
-    fun reply(e: CommandEvent, color: Color, title: String, message: String, image: String? = null) {
-        e.reply(EmbedUtils.create(color, title, message, image))
+    fun CommandEvent.reply(color: Color, title: String, message: String, image: String? = null) {
+        reply(EmbedUtils.create(color, title, message, image))
     }
 
-    fun reply(e: CommandEvent, color: Int, title: String, message: String, image: String? = null) {
-        e.reply(EmbedUtils.create(Color(color), title, message, image))
+    fun CommandEvent.reply(color: Int, title: String, message: String, image: String? = null) {
+        reply(EmbedUtils.create(Color(color), title, message, image))
     }
 
 }

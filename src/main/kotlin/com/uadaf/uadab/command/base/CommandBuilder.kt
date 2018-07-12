@@ -22,13 +22,13 @@ class CommandBuilder {
     private var botPermissions: Array<out Permission> = arrayOf()
     private var aliases: Array<out String> = arrayOf()
     private var children: Array<out Command> = arrayOf()
-    private var action: CommandAction = { e ->
-        e.reply("No action specified!")
-        e.reactError()
+    private var action: CommandAction = {
+        reply("No action specified!")
+        reactError()
     }
-    private var onDenied: CommandDeniedAction = { _, e ->
-        e.reply(EmbedUtils.create(0xFF0000, "Permission denied", "Your classification disallow you from using this", null))
-        e.reactWarning()
+    private var onDenied: CommandDeniedAction = { _ ->
+        reply(EmbedUtils.create(0xFF0000, "Permission denied", "Your classification disallow you from using this", null))
+        reactWarning()
     }
 
     fun setName(name: String): CommandBuilder {
@@ -77,7 +77,7 @@ class CommandBuilder {
         return this
     }
 
-    fun setAllowedClasses(vararg  classes: Classification): CommandBuilder {
+    fun setAllowedClasses(vararg classes: Classification): CommandBuilder {
         allowedClasses = mutableSetOf(*classes)
         return this
     }
@@ -117,12 +117,12 @@ class CommandBuilder {
         return this
     }
 
-    fun setAction(action: (CommandEvent) -> Unit): CommandBuilder {
+    fun setAction(action: CommandAction): CommandBuilder {
         this.action = action
         return this
     }
 
-    fun setOnDenied(onDenied: (Set<Classification>, CommandEvent) -> Unit): CommandBuilder {
+    fun setOnDenied(onDenied: CommandDeniedAction): CommandBuilder {
         this.onDenied = onDenied
         return this
     }

@@ -6,8 +6,8 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.users.Classification
 import com.uadaf.uadab.users.Users
 
-typealias CommandAction = (CommandEvent) -> Unit
-typealias CommandDeniedAction = (Set<Classification>, CommandEvent) -> Unit
+typealias CommandAction = CommandEvent.() -> Unit
+typealias CommandDeniedAction = CommandEvent.(Set<Classification>) -> Unit
 
 open class AdvancedCommand(private val action: CommandAction, private val onDenied: CommandDeniedAction,
                            val allowedFor: Set<Classification>, val hidden: Boolean) : Command() {
@@ -23,7 +23,7 @@ open class AdvancedCommand(private val action: CommandAction, private val onDeni
             }
 
         } else {
-            onDenied(allowedFor, e)
+            e.onDenied(allowedFor)
         }
     }
 

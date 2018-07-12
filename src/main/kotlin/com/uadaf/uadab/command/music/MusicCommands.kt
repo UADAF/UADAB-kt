@@ -25,74 +25,75 @@ object MusicCommands : ICommandList {
     /**
      * All music commands are bound to guilds
      */
-    override fun command(name: String, help: String, action: (CommandEvent) -> Unit): CommandBuilder {
+    override fun command(name: String, help: String, action: CommandEvent.() -> Unit): CommandBuilder {
         return super.command(name, help, action).setGuildOnly(true)
     }
 
     override fun init(): Array<Command> {
-        return arrayOf(PlayCommand, command("pause", "Pause playing") { e ->
-            val g = e.guild
+        return arrayOf(PlayCommand, command("pause", "Pause playing") {
+            val g = guild
             if (!MusicHandler.isPaused(g) && MusicHandler.playlistSize(g) > 0) {
                 MusicHandler.pause(g)
-                reply(e, GREEN, "Paused", "", cat.img)
-                e.reactSuccess()
+                reply(GREEN, "Paused", "", cat.img)
+                reactSuccess()
             } else {
-                reply(e, YELLOW, "Not playing", "", cat.img)
-                e.reactWarning()
+                reply(YELLOW, "Not playing", "", cat.img)
+                reactWarning()
             }
-        }.build(), command("resume", "Resumes playing") { e ->
-            if (MusicHandler.isPaused(e.guild)) {
-                MusicHandler.resume(e.guild)
-                reply(e, GREEN, "Resumed", "", cat.img)
-                e.reactSuccess()
+        }.build(), command("resume", "Resumes playing") {
+            if (MusicHandler.isPaused(guild)) {
+                MusicHandler.resume(guild)
+                reply(GREEN, "Resumed", "", cat.img)
+                reactSuccess()
             } else {
-                reply(e, YELLOW, "Not paused", "", cat.img)
-                e.reactWarning()
+                reply(YELLOW, "Not paused", "", cat.img)
+                reactWarning()
             }
-        }.build(), command("reset", "Clears playlist") { e ->
-            if (MusicHandler.playlistSize(e.guild) > 0) {
-                MusicHandler.reset(e.guild)
-                reply(e, GREEN, "Reseted", "", cat.img)
+        }.build(), command("reset", "Clears playlist") {
+            if (MusicHandler.playlistSize(guild) > 0) {
+                MusicHandler.reset(guild)
+                reply(GREEN, "Reseted", "", cat.img)
             } else {
-                reply(e, RED, "Nothing playing", "", cat.img)
-                e.reactWarning()
+                reply(RED, "Nothing playing", "", cat.img)
+                reactWarning()
             }
-        }.setOnDenied { _, e -> reply(e, RED, "You shall not clear!", "", cat.img) }.setAllowedClasses(ASSETS).setAliases("clear").build(), command("skip", "Skips specified song") { e ->
-            val args = e.args
-            val skipped: AudioTrack
-            val skippedId: Int
-            if (args.isEmpty()) {
-                if (MusicHandler.playlistSize(e.guild) > 0) {
-                    skipped = MusicHandler.skip(0, e.guild)
-                    skippedId = 0
+        }.setOnDenied { _ -> reply(RED, "You shall not clear!", "", cat.img) }.setAllowedClasses(ASSETS).setAliases("clear").build(), command("skip", "Skips specified song") {
+            val toSkip = if (args.isEmpty()) {
+                if (MusicHandler.playlistSize(guild) > 0) {
+                    0
                 } else {
-                    reply(e, RED, "Playlist empty", "", cat.img)
-                    e.reactWarning()
+                    reply(RED, "Playlist empty", "", cat.img)
+                    reactWarning()
                     return@command
                 }
             } else {
-                val n = Integer.parseInt(args)
-                if (MusicHandler.playlistSize(e.guild) > n) {
-                    skipped = MusicHandler.skip(n, e.guild)
-                    skippedId = n
+                val n = args.toIntOrNull()
+                if(n != null) {
+                    if (MusicHandler.playlistSize(guild) > n) {
+                        n
+                    } else {
+                        reply(RED, "No such song in playlist", "", cat.img)
+                        reactWarning()
+                        return@command
+                    }
                 } else {
-                    reply(e, RED, "No such song in playlist", "", cat.img)
-                    e.reactWarning()
+                    reply(RED, "Invalid args", "", cat.img)
+                    reactWarning()
                     return@command
                 }
             }
-            reply(e, YELLOW, "Skipped", "${skippedId + 1}: ${skipped.identifier}", cat.img)
-            e.reactSuccess()
-        }.setOnDenied { _, e -> reply(e, RED, "You shall not skip!", "", cat.img) }.setAllowedClasses(ASSETS).setArguments("[i%num%]").build(), command("playlist", "Shows playlist") { e ->
-            val g = e.guild
-            val size = MusicHandler.playlistSize(g)
+            val skipped = MusicHandler.skip(toSkip - 1, guild)
+            reply(YELLOW, "Skipped", "$toSkip: ${formatTrack(skipped)}", cat.img)
+            reactSuccess()
+        }.setOnDenied { _ -> reply(RED, "You shall not skip!", "", cat.img) }.setAllowedClasses(ASSETS).setArguments("[i%num%]").build(), command("playlist", "Shows playlist") {
+            val size = MusicHandler.playlistSize(guild)
             if (size == 0) {
-                e.reply("Playlist empty")
-                e.reactWarning()
+                reply("Playlist empty")
+                reactWarning()
                 return@command
             }
-            playlist(MusicHandler.currentTrack(g)!!, MusicHandler.getPlaylist(g), e)
-            e.reactSuccess()
+            playlist(MusicHandler.currentTrack(guild)!!, MusicHandler.getPlaylist(guild), this)
+            reactSuccess()
         }.build())
     }
 
@@ -113,35 +114,22 @@ object MusicCommands : ICommandList {
                 }
             }
             totalTime += cur.duration - cur.position
-            +"1: ${formatTrack(cur)} ${cur.position * 100 / cur.duration}%"
+            +"1: ${formatTrack(cur)} ${cur.position * 100 / cur.duration}%\n"
             playlist.forEachIndexed { i, track ->
                 totalTime += track.duration
-                +"${i + 1}: ${formatTrack(track)}\n"
+                +"${i + 2}: ${formatTrack(track)}\n"
             }
             +"Total time: ${playlistTimeFormat.format(Date(totalTime))}"
         }
     }
 
-
-    private fun formatTrack(name: String): String {
-        if (name.startsWith("http")) {
-            return name
-        }
-        return PlayCommand.formatData(MusicHandler.getVariants(name.removePrefix("Music/"))[0])
-    }
-
     private fun formatTrack(track: AudioTrack): String {
-        return formatTrack(track.identifier)
-    }
-
-    private fun addPlaylistElement(playlist: StringBuilder, pos: Int, track: AudioTrack) {
         val name = track.identifier
-        playlist.append(pos).append(": ").append(formatTrack(name))
-    }
-
-    private fun sendPlaylist(playlist: String, part: Int, e: CommandEvent) {
-        val title = if (part == -1) "Playlist" else "Playlist part $part"
-        reply(e, GREEN, title, playlist, cat.img)
+        return if (name.startsWith("http")) {
+            name
+        } else {
+            PlayCommand.formatData(MusicHandler.getVariants(name.removePrefix("Music/"))[0])
+        }
     }
 
 

@@ -7,10 +7,8 @@ import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.users.EVERYONE
 import com.uadaf.uadab.utils.*
 import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.async as kAsync
 import kotlinx.coroutines.experimental.launch
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.entities.MessageEmbed
 import java.awt.Color
 import java.awt.Color.RED
 import java.io.ByteArrayOutputStream
@@ -21,23 +19,23 @@ object MiscCommands : ICommandList {
 
     override fun init(): Array<Command> {
         return arrayOf(command("box", "Generate Machine-Box") {
-            val args = it.args.split(", ")
+            val args = args.split(", ")
             if (args.size != 3) {
-                reply(it, RED, "Invalid args", "sudo box i%size%, %color1%, %color2%\n color is '#XXXXXX' or 'xkcd:color name'", cat.img)
+                reply(RED, "Invalid args", "sudo box i%size%, %color1%, %color2%\n color is '#XXXXXX' or 'xkcd:color name'", cat.img)
                 return@command
             }
             val (size, color1, color2) = args
             launch {
-                val colors = async {
+                val colors = kAsync {
                     extractColor(color1).await() to extractColor(color2).await()
                 }
                 colors.join()
                 if (colors.isCompletedExceptionally) {
                     val ex = colors.getCompletionExceptionOrNull()!!
                     if (ex is IllegalArgumentException) {
-                        reply(it, RED, "Invalid color '${ex.message}'", "Color is '#XXXXXX' or 'xkcd:color name' or 'poi:color name'", cat.img)
+                        reply(RED, "Invalid color '${ex.message}'", "Color is '#XXXXXX' or 'xkcd:color name' or 'poi:color name'", cat.img)
                     } else {
-                        reply(it, RED, "Sorry!", "I can't load these colors because of exception: ${ex.message}", cat.img)
+                        reply(RED, "Sorry!", "I can't load these colors because of exception: ${ex.message}", cat.img)
                     }
                     return@launch
                 }
@@ -45,12 +43,12 @@ object MiscCommands : ICommandList {
                 val img = Boxes.getBox(size.toInt(), size.toInt(), primary, secondary)
                 val os = ByteArrayOutputStream()
                 ImageIO.write(img, "PNG", os)
-                it.textChannel.sendFile(os.toByteArray(), "box.png").queue()
+                textChannel.sendFile(os.toByteArray(), "box.png").queue()
             }
-        }.setArguments("i%size%, %color1%, %color2%").build(), command("explain", "Explains something") { e ->
-            if (e.args.toLowerCase() == "list") {
+        }.setArguments("i%size%, %color1%, %color2%").build(), command("explain", "Explains something") {
+            if (args.toLowerCase() == "list") {
                 paginatedEmbed {
-                    sender = e::reply
+                    sender = ::reply
                     pattern {
                         color = cat.color
                         thumbnail = cat.img
@@ -61,34 +59,34 @@ object MiscCommands : ICommandList {
                         +"\n"
                     }
                 }
-                e.reactSuccess()
+                reactSuccess()
             } else {
-                val url = FrequentBash.fb[e.args.toLowerCase()]
+                val url = FrequentBash.fb[args.toLowerCase()]
                 if (url == null) {
-                    e.reply(EmbedUtils.create(RED, "Not found", "This thing is not on things-to-explain-list, use 'sudo explain list'", cat.img))
-                    e.reactWarning()
+                    reply(EmbedUtils.create(RED, "Not found", "This thing is not on things-to-explain-list, use 'sudo explain list'", cat.img))
+                    reactWarning()
                 } else {
-                    e.reply(EmbedUtils.create(cat.color, e.args, url, cat.img))
-                    e.reactSuccess()
+                    reply(EmbedUtils.create(cat.color, args, url, cat.img))
+                    reactSuccess()
                 }
             }
-        }.setArguments("list|%name%").setAllowedClasses(EVERYONE).build(), command("http", "Get description of HTTP Status codes") { e ->
+        }.setArguments("list|%name%").setAllowedClasses(EVERYONE).build(), command("http", "Get description of HTTP Status codes") {
             launch {
                 val aCodes = HTTPCodesUtils.getDataSet()
                 aCodes.join()
                 if (aCodes.isCompletedExceptionally) {
-                    e.reply(EmbedUtils.create(RED, "This is the Server error. I'm sorry",
-                            "Do you understand something?\n\n${aCodes.getCompletionExceptionOrNull()}", cat.img))
+                    reply(RED, "This is the Server error. I'm sorry",
+                            "Do you understand something?\n\n${aCodes.getCompletionExceptionOrNull()}", cat.img)
                 } else {
                     val codes = aCodes.getCompleted()
-                    var args = e.args
+                    var args = args
                     val description = if ("-nd" in args) {
                         args = args.replaceFirst("-nd", "")
                         false
                     } else true
                     if (args.isBlank()) {
                         paginatedEmbed {
-                            sender = e::reply
+                            sender = ::reply
                             pattern {
                                 color = cat.color
                                 thumbnail = cat.img
@@ -104,7 +102,7 @@ object MiscCommands : ICommandList {
                         val valid = requested.filter { it in codes }.map { codes[it] }
 
                         paginatedEmbed {
-                            sender = e::reply
+                            sender = ::reply
                             pattern {
                                 color = cat.color
                                 thumbnail = cat.img
@@ -134,7 +132,7 @@ object MiscCommands : ICommandList {
     }
 
     fun extractColor(c: String): Deferred<Color> {
-        return async {
+        return kAsync {
             when {
                 c.startsWith("#") -> {
                     Color(c.substring(1).toInt(16))
