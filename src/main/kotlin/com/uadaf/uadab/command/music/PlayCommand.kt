@@ -150,7 +150,7 @@ object PlayCommand : AdvancedCommand({ PlayCommand.action(it) }, { _, e -> PlayC
     private fun handleLoad(e: CommandEvent, ret: Pair<MusicHandler.LoadResult, String?>) {
         val rep = when (ret.first) {
             SUCCESS -> Color.GREEN to "Loaded"
-            ALREADY_IN_QUEUE -> Color.YELLOW to "This track is already in queue and repeats disallowed\n${ret.second}"
+            ALREADY_IN_QUEUE -> Color.YELLOW to "This track is already in queue and repeats disallowed\n${ret.second ?: ""}"
             NOT_FOUND -> Color.RED to "Track not found: ${ret.second ?: ""}"
             FAIL -> Color.RED to (ret.second ?: "Failed to load track")
             UNKNOWN -> Color.BLACK to "Something really wrong happened"
