@@ -8,15 +8,16 @@ object ExtensionRegistry {
     private val extensions: MutableMap<String, IExtension> = mutableMapOf()
 
     fun registerExtension(e: IExtension) {
-        UADAB.log.debug("Loading extension /${e.getEndpoint()}")
-        extensions[e.getEndpoint()] = e
-        Spark.webSocket("/${e.getEndpoint()}", e)
+        UADAB.log.debug("Loading extension /${e.endpoint}")
+        extensions[e.endpoint] = e
+        Spark.webSocket("/${e.endpoint}", e)
     }
 
     fun init() {
         Spark.port(8080)
         registerExtension(Web)
         registerExtension(Alerter)
+        registerExtension(Shutdown)
         Spark.init()
     }
 

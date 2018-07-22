@@ -3,8 +3,8 @@ package com.uadaf.uadab.command
 import com.gt22.randomutils.Instances
 import com.jagrosh.jdautilities.command.Command
 import com.jagrosh.jdautilities.command.CommandEvent
-import com.uadaf.uadab.DatabseManager
 import com.uadaf.uadab.SystemIntegrityProtection
+import com.uadaf.uadab.TokenManager
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.AdvancedCommand
@@ -22,24 +22,13 @@ import java.awt.Color.*
 import java.sql.SQLException
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.system.exitProcess
 import kotlinx.coroutines.experimental.async as kAsync
 
 object SystemCommands : ICommandList {
     override val cat: AdvancedCategory = AdvancedCategory("System", Color(0x5E5E5E), "http://52.48.142.75/images/gear.png")
-    private val CHECK_USER = DatabseManager.connection.prepareStatement("SELECT COUNT(*) as `count` FROM `tokens` WHERE `user` = ?")
-    private val INSERT_TOKEN = DatabseManager.connection.prepareStatement("INSERT INTO `tokens` VALUES (?, ?)")
-    private val DELETE_TOKEN = DatabseManager.connection.prepareStatement("DELETE FROM `tokens` WHERE `user` = ?")
-    private val UPDATE_TOKEN = DatabseManager.connection.prepareStatement("UPDATE `tokens` SET `token` = ? WHERE `user` = ?")
 
-    private fun hasToken(usr: String): Boolean {
-        CHECK_USER.setString(1, usr)
-        val countRes = CHECK_USER.executeQuery()
-        if (countRes.next()) {
-            return countRes.getInt(1) != 0
-        } else {
-            throw SQLException("Something went wrong when retrieving token count for user")
-        }
-    }
+
 
     private fun createToken(): String {
         val arr = ByteArray(64)
@@ -67,13 +56,11 @@ object SystemCommands : ICommandList {
                 val usr = Users[author]
                 replyInDm(
                         try {
-                            if (hasToken(usr.name)) {
+                            if (TokenManager.hasToken(usr.name)) {
                                 EmbedUtils.create(RED, "Error",
                                         "You already have token\n Run 'token regen' to explicitly recreate it", cat.img)
                             } else {
-                                INSERT_TOKEN.setString(1, usr.name)
-                                INSERT_TOKEN.setString(2, token)
-                                INSERT_TOKEN.execute()
+                                TokenManager.putToken(usr.name, token)
                                 EmbedUtils.create(GREEN, "Your token", token, cat.img)
 
                             }
@@ -92,9 +79,8 @@ object SystemCommands : ICommandList {
                                         EmbedUtils.create(RED, "Error", "User not found", cat.img)
                                     } else {
                                         try {
-                                            if (hasToken(usr.name)) {
-                                                DELETE_TOKEN.setString(1, usr.name)
-                                                DELETE_TOKEN.execute()
+                                            if (TokenManager.hasToken(usr.name)) {
+                                                TokenManager.deleteToken(usr.name)
                                                 EmbedUtils.create(GREEN, "Success",
                                                         "Token for ${usr.name} deleted", cat.img)
                                             } else {
@@ -114,11 +100,9 @@ object SystemCommands : ICommandList {
                         launch {
                             replyInDm(
                                     try {
-                                        if (hasToken(usr.name)) {
+                                        if (TokenManager.hasToken(usr.name)) {
                                             val token = createToken()
-                                            UPDATE_TOKEN.setString(1, token)
-                                            UPDATE_TOKEN.setString(2, usr.name)
-                                            UPDATE_TOKEN.execute()
+                                            TokenManager.updateToken(usr.name, token)
                                             EmbedUtils.create(GREEN, "Your new token", token, cat.img)
                                         } else {
                                             EmbedUtils.create(RED, "Error",
@@ -184,7 +168,7 @@ object SystemCommands : ICommandList {
                 val u = Users[this]
                 channel.sendMessage(EmbedUtils.create(cat.color.rgb, "Shutting down", "Goodbye, ${u.name}", u.avatarWithClassUrl)).queue {
                     UADAB.bot.shutdown()
-                    System.exit(0)
+                    exitProcess(0)
                 }
             }.setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _ ->
                 val author = Users[this]

@@ -7,7 +7,7 @@ object Music : IExtension {
 
     }
 
-    override fun getEndpoint(): String = "music"
+    override val endpoint = "music"
 
 
 

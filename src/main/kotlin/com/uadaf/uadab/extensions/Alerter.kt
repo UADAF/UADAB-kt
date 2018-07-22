@@ -32,7 +32,7 @@ object Alerter : IExtension {
         currentSession?.disconnect()
     }
 
-    override fun getEndpoint(): String = "alert"
+    override val endpoint: String = "alert"
 
     private var currentSession: Session? = null
 
@@ -44,7 +44,7 @@ object Alerter : IExtension {
             return
         } else {
             currentSession = s
-            log.info("Got /${getEndpoint()} connection from ${s.remoteAddress.hostName}")
+            log.info("Got /$endpoint connection from ${s.remoteAddress.hostName}")
         }
     }
 

@@ -34,7 +34,7 @@ object Web : ListenerAdapter(), IExtension {
         currentSession?.disconnect()
     }
 
-    override fun getEndpoint(): String = "web"
+    override val endpoint: String = "web"
 
     var currentSession: Session? = null
 
@@ -46,7 +46,7 @@ object Web : ListenerAdapter(), IExtension {
             return
         } else {
             currentSession = s
-            log.info("Got /${getEndpoint()} connection from ${s.remoteAddress.hostName}")
+            log.info("Got /$endpoint connection from ${s.remoteAddress.hostName}")
         }
     }
 

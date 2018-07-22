@@ -4,6 +4,6 @@ interface IExtension {
 
     fun shutdown()
 
-    fun getEndpoint(): String
+    val endpoint: String
 
 }
