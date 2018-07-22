@@ -41,7 +41,13 @@ object Web : ListenerAdapter(), IExtension {
     @OnWebSocketConnect
     fun onConnect(s: Session) {
         if (currentSession != null) {
-            s.remote.sendString("ALREADY_CONNECTED")
+            if(currentSession!!.remoteAddress.hostName == s.remoteAddress.hostName) {
+                currentSession!!.disconnect()
+                currentSession = s
+                log.info("Got /${getEndpoint()} reconnection from ${s.remoteAddress.hostName}")
+                return
+            }
+            s.remote.sendString(buildResponse("ALREADY_CONNECTED"))
             s.disconnect()
             return
         } else {
@@ -60,13 +66,21 @@ object Web : ListenerAdapter(), IExtension {
             args = slt[1].split(":")
         }
         when (msg) {
-            "ping" -> s.remote.sendString("{\"pong\": \"${s.remoteAddress.hostName}\"")
+            "ping" -> s.remote.sendString(JsonObjectBuilder().add("ping", JsonObjectBuilder().add("pong", s.remoteAddress.hostName).build()).build().toString())
             "status" -> status(s)
             "music" -> music(s)
             "user" -> user(s, args[0])
             "reclass" -> reclass(s, args[0], args[1])
-            else -> s.remote.sendString("{\"state\": \"CMD_NOT_FOUND\"}")
+            "msg" -> sendMessage(s,args[0],args[1],args)
+            else -> s.remote.sendString(buildResponse("CMD_NOT_FOUND"))
         }
+    }
+
+    fun sendMessage(s: Session, g: String,chan: String ,args: List<String>) {
+        val guild = UADAB.bot.guilds.filter { it.id == g }.getOrNull(0) ?: return s.remote.sendString(buildResponse("GUILD_NOT_FOUND"))
+        val channel = guild.textChannels.filter { it.id == chan }.getOrNull(0) ?: return s.remote.sendString(buildResponse("TEXT_CHANNEL_NOT_FOUND"))
+        val text = args.filterIndexed { index, _ -> index > 1 }.getOrNull(0) ?: return s.remote.sendString(buildResponse("EMPTY_MESSAGE"))
+        channel.sendMessage(text).queue()
     }
 
     @OnWebSocketClose
@@ -78,11 +92,14 @@ object Web : ListenerAdapter(), IExtension {
     fun status(s: Session) {
         val rt = Runtime.getRuntime()
         val res = JsonObjectBuilder()
-                .add("mem", ((rt.totalMemory() - rt.freeMemory()) shr 20).toInt())
-                .add("state", UADAB.bot.status.toString())
-                .add("users", UADAB.bot.users.size)
-                .add("startTime", UADAB.startTime.toString())
-                .add("avatarUrl", UADAB.bot.selfUser.effectiveAvatarUrl)
+                .add("status", JsonObjectBuilder()
+                    .add("name", UADAB.bot.selfUser.name)
+                    .add("id", UADAB.bot.selfUser.id)
+                    .add("mem", ((rt.totalMemory() - rt.freeMemory()) shr 20).toInt())
+                    .add("state", UADAB.bot.status.toString())
+                    .add("users", UADAB.bot.users.size)
+                    .add("startTime", UADAB.startTime.toString())
+                    .add("avatarUrl", UADAB.bot.selfUser.effectiveAvatarUrl).build())
                 .build().toString()
         s.remote.sendString(res)
     }
@@ -95,7 +112,7 @@ object Web : ListenerAdapter(), IExtension {
             playlist.forEach { arr.add(it.identifier) }
             res[guild.name] = arr
         }
-        s.remote.sendString(res.toString())
+        s.remote.sendString(JsonObjectBuilder().add("music", res).build().toString())
     }
 
     private fun userInfo(user: UADABUser): JsonObject {
@@ -116,36 +133,41 @@ object Web : ListenerAdapter(), IExtension {
     fun user(s: Session, info: String) {
         val user = Users.lookup(info)
         if(user == null) {
-            s.remote.sendString("{\"state\": \"USR_NOT_FOUND\"}")
+            s.remote.sendString(JsonObjectBuilder().add("userInfo", JsonObjectBuilder().add("state", "USR_NOT_FOUND").build()).build().toString())
         } else {
-            s.remote.sendString(userInfo(user).toString())
+            s.remote.sendString(JsonObjectBuilder().add("userInfo", userInfo(user)).build().toString())
         }
     }
 
     fun reclass(s: Session, info: String, classification: String) {
         val cls = Classification.getClassification(classification, strict = true)
         if(cls == null) {
-            s.remote.sendString("{\"state\": \"CLS_NOT_FOUND\"}")
+            s.remote.sendString(buildResponse("CLS_NOT_FOUND"))
             return
         }
         val user = Users.lookup(info)
         if(user == null) {
-            s.remote.sendString("{\"state\": \"USR_NOT_FOUND\"}")
+            s.remote.sendString(buildResponse("USR_NOT_FOUND"))
             return
         }
         user.classification = cls
-        s.remote.sendString("{\"state\": \"SUCCESS\"}")
+        s.remote.sendString(buildResponse("SUCCESS"))
     }
+
+    fun buildResponse(msg: String) =
+            JsonObjectBuilder().add("response", JsonObjectBuilder().add("state", msg).build()).build().toString()
 
     override fun onMessageReceived(e: MessageReceivedEvent) {
         if(currentSession != null) {
-            val res = JsonObjectBuilder()
-                    .add("author", e.author.id)
+            val res = JsonObjectBuilder().add("message", JsonObjectBuilder()
+                    .add("authorName", e.author.name)
+                    .add("authorId", e.author.id)
+                    .add("authorAvatar", e.author.avatarUrl)
                     .add("guild", e.guild.id)
                     .add("channel", e.textChannel.id)
                     .add("id", e.messageId)
                     .add("text", e.message.contentRaw)
-                    .add("isWebhook", e.isWebhookMessage)
+                    .add("isWebhook", e.isWebhookMessage).build())
                     .build().toString()
             currentSession!!.remote.sendString(res)
         }
