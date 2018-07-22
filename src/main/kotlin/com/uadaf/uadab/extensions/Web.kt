@@ -44,7 +44,7 @@ object Web : ListenerAdapter(), IExtension {
             if(currentSession!!.remoteAddress.hostName == s.remoteAddress.hostName) {
                 currentSession!!.disconnect()
                 currentSession = s
-                log.info("Got /${getEndpoint()} reconnection from ${s.remoteAddress.hostName}")
+                log.info("Got /$endpoint reconnection from ${s.remoteAddress.hostName}")
                 return
             }
             s.remote.sendString(buildResponse("ALREADY_CONNECTED"))

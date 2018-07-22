@@ -12,6 +12,8 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.uadaf.uadab.UADAB
+import com.uadaf.uadab.command.music.MusicCommands
+import com.uadaf.uadab.command.music.PlayCommand
 import com.uadaf.uadab.utils.random
 import net.dv8tion.jda.core.entities.Guild
 import java.nio.file.Paths
@@ -127,6 +129,7 @@ object MusicHandler {
             override fun trackLoaded(track: AudioTrack) {
                 if (args.noRepeat && (player.scheduler.hasTack(track) || player.player.playingTrack?.identifier == track.identifier)) {
                     result = LoadResult.ALREADY_IN_QUEUE
+                    msg = MusicCommands.formatTrack(track)
                     return
                 }
                 result = LoadResult.SUCCESS

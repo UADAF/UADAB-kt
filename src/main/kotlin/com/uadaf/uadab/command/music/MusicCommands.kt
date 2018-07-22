@@ -12,6 +12,7 @@ import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.users.ASSETS
 import java.awt.Color
 import java.awt.Color.*
+import java.net.URLDecoder
 import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.*
@@ -123,10 +124,10 @@ object MusicCommands : ICommandList {
         }
     }
 
-    private fun formatTrack(track: AudioTrack): String {
+    fun formatTrack(track: AudioTrack): String {
         val name = track.identifier
         return if (name.startsWith("http")) {
-            name
+            URLDecoder.decode(name, "UTF-8")
         } else {
             PlayCommand.formatData(MusicHandler.getVariants(name.removePrefix("Music/"))[0])
         }
