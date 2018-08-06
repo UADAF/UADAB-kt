@@ -97,22 +97,22 @@ object MusicCommands : ICommandList {
     }
 
 
-    fun playlist(cur: AudioTrack, playlist: List<AudioTrack>, e: CommandEvent) {
-        var totalTime = 0L
-        paginatedEmbed {
-            sender = e::reply
-            pattern {
-                color = GREEN
-                thumbnail = cat.img
-            }
-            preSend { overflow ->
-                title = if(overflow || pageId != 0) { //If we had an overflow at least once - label part
-                    "Playlist part ${this@paginatedEmbed.pageId + 1}"
-                } else {
-                    "Playlist"
+        fun playlist(cur: AudioTrack, playlist: List<AudioTrack>, e: CommandEvent) {
+            var totalTime = 0L
+            paginatedEmbed {
+                sender = e::reply
+                pattern {
+                    color = GREEN
+                    thumbnail = cat.img
                 }
-            }
-            totalTime += cur.duration - cur.position
+                preSend { overflow ->
+                    title = if(overflow || pageId != 0) {
+                        "Playlist part ${this@paginatedEmbed.pageId + 1}"
+                    } else {
+                        "Playlist"
+                    }
+                }
+                totalTime += cur.duration - cur.position
             +"1: ${formatTrack(cur)} ${cur.position * 100 / cur.duration}%"
             playlist.forEachIndexed { i, track ->
                 totalTime += track.duration
