@@ -31,7 +31,21 @@ object MusicHandler {
         FAIL,
         UNKNOWN
     }
-    
+
+    fun MusicContext.searchImg(name: String?): String? {
+        val img = this.search(name ?: return null).getOrNull(0)?.img ?: return null
+        if(img.isEmpty()) return null
+        return UADAB.config.MUSIC_META_URL + img
+    }
+
+    fun trackImg(track: AudioTrack): String {
+        return context.searchImg(track.identifier?.removePrefix("Music/")) ?: MusicCommands.cat.img!!
+    }
+
+    fun currentTrackImg(g: Guild): String {
+        return trackImg(currentTrack(g) ?: return MusicCommands.cat.img!!)
+    }
+
     init {
         loadContext()
         AudioSourceManagers.registerRemoteSources(playerManager)

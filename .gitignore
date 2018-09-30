@@ -1,6 +1,7 @@
 .*
 !.gitignore
 Music
+Music.meta
 build
 config.json
 internal

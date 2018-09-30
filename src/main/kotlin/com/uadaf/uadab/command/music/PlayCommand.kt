@@ -2,6 +2,7 @@ package com.uadaf.uadab.command.music
 
 import com.gt22.randomutils.Instances
 import com.gt22.uadam.data.*
+import com.uadaf.uadab.music.MusicHandler.searchImg
 import com.jagrosh.jdautilities.command.CommandEvent
 import com.uadaf.uadab.ReactionHandler
 import com.uadaf.uadab.UADAB
@@ -148,15 +149,19 @@ object PlayCommand : AdvancedCommand({ PlayCommand.action(this) }, { _ -> PlayCo
         "${i + 1}\u20e3 ${type(v)} - ${formatData(v)}"
     }.joinToString("\n\n")
 
+    infix fun <A, B, C> Pair<A, B>.to(third: C): Triple<A, B, C> {
+        return Triple(first, second, third)
+    }
 
     private fun handleLoad(e: CommandEvent, ret: Pair<MusicHandler.LoadResult, String?>) {
-        val rep = when (ret.first) {
-            SUCCESS -> Color.GREEN to "Loaded"
-            ALREADY_IN_QUEUE -> Color.YELLOW to "This track is already in queue and repeats disallowed\n${ret.second ?: ""}"
-            NOT_FOUND -> Color.RED to "Track not found: ${ret.second ?: ""}"
-            FAIL -> Color.RED to (ret.second ?: "Failed to load track")
-            UNKNOWN -> Color.BLACK to "Something really wrong happened"
+        val (title, text, img) = when (ret.first) {
+            SUCCESS -> Color.GREEN to "Loaded" to MusicHandler.trackImg(MusicHandler.getPlaylist(e.guild).lastOrNull() ?: MusicHandler.currentTrack(e.guild)!!)
+            ALREADY_IN_QUEUE -> Color.YELLOW to "This track is already in queue and repeats disallowed\n${ret.second ?: ""}" to MusicHandler.context.searchImg(ret.second)
+            NOT_FOUND -> Color.RED to "Track not found: ${ret.second ?: ""}" to null
+            FAIL -> Color.RED to (ret.second ?: "Failed to load track") to null
+            UNKNOWN -> Color.BLACK to "Something really wrong happened" to null
         }
-        e.reply(EmbedUtils.create(rep.first, "Result:", rep.second, MusicCommands.cat.img))
+        println(img)
+        e.reply(EmbedUtils.create(title, "Result:", text, img ?: MusicCommands.cat.img))
     }
 }

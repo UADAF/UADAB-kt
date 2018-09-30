@@ -10,6 +10,7 @@ class Config {
     lateinit var IMAGE_DB_MANAGER: String
     lateinit var ROUTER_ID: String
     lateinit var MUSIC_DIR: String
+    lateinit var MUSIC_META_URL: String
     lateinit var OWNER: String
     lateinit var CO_OWNERS: Array<String>
     lateinit var QUOTER_URL: String

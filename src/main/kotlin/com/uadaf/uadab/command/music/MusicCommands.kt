@@ -7,9 +7,9 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.CommandBuilder
 import com.uadaf.uadab.command.base.ICommandList
-import com.uadaf.uadab.utils.paginatedEmbed
 import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.users.ASSETS
+import com.uadaf.uadab.utils.paginatedEmbed
 import java.awt.Color
 import java.awt.Color.*
 import java.net.URLDecoder
@@ -35,7 +35,7 @@ object MusicCommands : ICommandList {
             val g = guild
             if (!MusicHandler.isPaused(g) && MusicHandler.playlistSize(g) > 0) {
                 MusicHandler.pause(g)
-                reply(GREEN, "Paused", "", cat.img)
+                reply(GREEN, "Paused", "", MusicHandler.currentTrackImg(g))
                 reactSuccess()
             } else {
                 reply(YELLOW, "Not playing", "", cat.img)
@@ -44,7 +44,7 @@ object MusicCommands : ICommandList {
         }.build(), command("resume", "Resumes playing") {
             if (MusicHandler.isPaused(guild)) {
                 MusicHandler.resume(guild)
-                reply(GREEN, "Resumed", "", cat.img)
+                reply(GREEN, "Resumed", "", MusicHandler.currentTrackImg(guild))
                 reactSuccess()
             } else {
                 reply(YELLOW, "Not paused", "", cat.img)
@@ -52,16 +52,17 @@ object MusicCommands : ICommandList {
             }
         }.build(), command("reset", "Clears playlist") {
             if (MusicHandler.playlistSize(guild) > 0) {
+                val img = MusicHandler.currentTrackImg(guild)
                 MusicHandler.reset(guild)
-                reply(GREEN, "Reseted", "", cat.img)
+                reply(GREEN, "Reseted", "", img)
             } else {
                 reply(RED, "Nothing playing", "", cat.img)
                 reactWarning()
             }
-        }.setOnDenied { _ -> reply(RED, "You shall not clear!", "", cat.img) }.setAllowedClasses(ASSETS).setAliases("clear").build(), command("skip", "Skips specified song") {
+        }.setOnDenied { _ -> reply(RED, "You shall not clear!", "", MusicHandler.currentTrackImg(guild)) }.setAllowedClasses(ASSETS).setAliases("clear").build(), command("skip", "Skips specified song") {
             val toSkip = if (args.isEmpty()) {
                 if (MusicHandler.playlistSize(guild) > 0) {
-                    0
+                    1
                 } else {
                     reply(RED, "Playlist empty", "", cat.img)
                     reactWarning()
@@ -84,7 +85,7 @@ object MusicCommands : ICommandList {
                 }
             }
             val skipped = MusicHandler.skip(toSkip - 1, guild)
-            reply(YELLOW, "Skipped", "$toSkip: ${formatTrack(skipped)}", cat.img)
+            reply(YELLOW, "Skipped", "$toSkip: ${formatTrack(skipped)}", MusicHandler.trackImg(skipped))
             reactSuccess()
         }.setOnDenied { _ -> reply(RED, "You shall not skip!", "", cat.img) }.setAllowedClasses(ASSETS).setArguments("[i%num%]").build(), command("playlist", "Shows playlist") {
             val size = MusicHandler.playlistSize(guild)
@@ -116,7 +117,7 @@ object MusicCommands : ICommandList {
             sender = e::reply
             pattern {
                 color = GREEN
-                thumbnail = cat.img
+                thumbnail = MusicHandler.trackImg(cur)
             }
             preSend { overflow ->
                 title = if(overflow || pageId != 0) { //If we had an overflow at least once - label part
