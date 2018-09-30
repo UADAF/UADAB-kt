@@ -95,7 +95,18 @@ object MusicCommands : ICommandList {
             }
             playlist(MusicHandler.currentTrack(guild)!!, MusicHandler.getPlaylist(guild), this)
             reactSuccess()
-        }.build())
+        }.build(),
+        command("reload", "Reload music context") {
+            try {
+                MusicHandler.loadContext()
+            } catch (e: Exception) {
+                reply(RED, "Something went wrong", e.localizedMessage, cat.img)
+                reactError()
+                return@command
+            }
+            reply(GREEN, "Success", "Context reloaded", cat.img)
+            reactSuccess()
+        }.setAllowedClasses(ASSETS).build())
     }
 
 
