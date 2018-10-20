@@ -3,7 +3,6 @@ package com.uadaf.uadab.utils
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import org.jooq.lambda.Unchecked
 
 import java.io.FileReader
 import java.lang.reflect.Array
@@ -30,7 +29,7 @@ object ConfigUtils {
     @Throws(Exception::class)
     fun <T> loadConfig(configClass: Class<T>, config: JsonObject, defaultConfig: JsonObject): T {
         val cfg = configClass.newInstance()
-        Arrays.stream<Field>(configClass.fields).forEach(Unchecked.consumer<Field> { f ->
+        Arrays.stream<Field>(configClass.fields).forEach { f ->
             if (!f.isAnnotationPresent(ManualConfigProperty::class.java)) {
                 val name = f.name
                 f.isAccessible = true
@@ -41,7 +40,7 @@ object ConfigUtils {
                     f.set(cfg, convertElementToType(f.getType(), value))
                 }
             }
-        })
+        }
         try {
             val loadManual = configClass.getMethod("loadManual", JsonObject::class.java)
             loadManual.invoke(cfg, config)

@@ -1,7 +1,6 @@
 package com.uadaf.uadab.users
 
 import com.google.gson.JsonObject
-import com.gt22.randomutils.log.SimpleLog
 import com.jagrosh.jdautilities.command.CommandEvent
 import com.jagrosh.jdautilities.commons.utils.FinderUtil
 import com.uadaf.uadab.GSON
@@ -11,7 +10,7 @@ import com.uadaf.uadab.utils.obj
 import com.uadaf.uadab.utils.set
 import com.uadaf.uadab.utils.str
 import net.dv8tion.jda.core.entities.User
-import org.jooq.lambda.Unchecked
+import org.apache.commons.logging.impl.SimpleLog
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -27,7 +26,7 @@ object Users {
     private val USERS_BY_SSN = HashMap<Int, UADABUser>()
     private val USERS_BY_DISCORD = HashMap<User, UADABUser>()
     private val USERS_DIR = Paths.get("internal", "users")
-    private val log = SimpleLog.getLog("PBBot#Users")
+    private val log = SimpleLog("PBBot#Users").apply { level = UADAB.log.level }
     private val saveTimer = Timer("User Save Timer", true)
 
     init {
@@ -37,8 +36,7 @@ object Users {
             try {
                 UADAB.parse(users).arr.forEach { e -> USERS_INFO.add(e.obj) }
             } catch (e: IOException) {
-                log.fatal("Unable to load users.json")
-                log.log(e)
+                log.fatal("Unable to load users.json", e)
             }
 
         } else {
@@ -48,7 +46,7 @@ object Users {
             if(!Files.exists(USERS_DIR)) {
                 Files.createDirectories(USERS_DIR)
             }
-            Files.list(USERS_DIR).forEach(Unchecked.consumer { p ->
+            Files.list(USERS_DIR).forEach { p ->
                 var name = p.fileName.toString()
                 try {
                     name = name.substring(0, name.indexOf(".json"))
@@ -57,14 +55,12 @@ object Users {
                     if(e is IllegalStateException) {
                         log.warn("User '$name' not found")
                     } else {
-                        log.fatal("Unable to load user '$name'")
-                        log.log(e)
+                        log.fatal("Unable to load user '$name'", e)
                     }
                 }
-            })
+            }
         } catch (e: IOException) {
-            log.fatal("Unable to load users")
-            log.log(e)
+            log.fatal("Unable to load users", e)
         }
         saveTimer.schedule(object : TimerTask() {
             override fun run() {
@@ -206,7 +202,7 @@ object Users {
     fun save() {
         Files.createDirectories(USERS_DIR)
         synchronized(USERS_BY_NAME) {
-            USERS_BY_NAME.forEach(Unchecked.biConsumer { n, u ->
+            USERS_BY_NAME.forEach { n, u ->
                 log.debug(String.format("Saving user '%s'", n))
                 val file = getUserFile(u)
                 if (!Files.exists(file)) {
@@ -214,7 +210,7 @@ object Users {
                 }
                 Files.write(file, GSON.toJson(u.data).toByteArray(StandardCharsets.UTF_8))
                 log.debug(String.format("User '%s' saved", n))
-            })
+            }
         }
     }
 

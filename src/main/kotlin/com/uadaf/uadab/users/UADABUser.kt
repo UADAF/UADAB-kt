@@ -3,12 +3,12 @@ package com.uadaf.uadab.users
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import com.gt22.randomutils.log.SimpleLog
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.utils.*
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.runBlocking
 import net.dv8tion.jda.core.entities.*
+import org.apache.commons.logging.impl.SimpleLog
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
@@ -173,6 +173,6 @@ class UADABUser internal constructor(name: String) {
     }
 
     companion object {
-        private val log = SimpleLog.getLog("UADABUser")
+        private val log = SimpleLog("UADABUser").apply { level = UADAB.log.level }
     }
 }

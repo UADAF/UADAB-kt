@@ -1,20 +1,14 @@
 package com.uadaf.uadab.utils
 
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.uadaf.uadab.PARSER
 import com.uadaf.uadab.UADAB
+import khttp.get
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import org.apache.http.HttpException
-import java.net.ConnectException
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.*
-import java.util.function.BinaryOperator
-import java.util.function.Function
-import java.util.function.Supplier
-import java.util.stream.Collectors
 
 object HTTPCodesUtils {
 
@@ -30,26 +24,20 @@ object HTTPCodesUtils {
     }
 
     private fun loadCodes(): Map<Int, HTTPStatusCode> {
-        val req: HttpURLConnection = URL(codesURL).openConnection() as HttpURLConnection
-        if (req.responseCode != 200) {
-            throw ConnectException(req.responseMessage)
-        }
         try {
-            val json = PARSER.parse(req.inputStream.bufferedReader()).arr
-            codesData = json.map(JsonElement::obj).filter { it["code"].asString.toIntOrNull() != null }.map {
-                HTTPStatusCode(it["code"].str.toInt(), it["phrase"].str, it["description"].str.removeSurrounding("\"").capitalize())
-            }.stream().collect(Collectors.toMap<HTTPStatusCode, Int, HTTPStatusCode, TreeMap<Int, HTTPStatusCode>>(
-                            Function { c -> c.code },
-                            Function.identity(),
-                            BinaryOperator { u, _ -> throw IllegalArgumentException("Duplicate key $u") },
-                            Supplier { TreeMap<Int, HTTPStatusCode>() })
-                    )
-            return codesData
+            return PARSER.parse(get(codesURL).text).arr
+                    .map(JsonElement::obj)
+                    .filter { "x" !in it["code"].str }
+                    .map(::HTTPStatusCode)
+                    .associateBy(HTTPStatusCode::code)
         } catch (e: Exception) {
-            UADAB.log.log(e)
+            UADAB.log.error(e)
             throw HttpException(e.message ?: e::class.java.simpleName)
         }
     }
 }
 
-data class HTTPStatusCode(val code: Int, val phrase: String, val description: String)
+data class HTTPStatusCode(val code: Int, val phrase: String, val description: String) {
+    constructor(data: JsonObject) : this(data["code"].int, data["phrase"].str,
+            data["description"].str.removeSurrounding("\"").capitalize())
+}

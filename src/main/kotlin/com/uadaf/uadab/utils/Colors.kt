@@ -1,12 +1,11 @@
 package com.uadaf.uadab.utils
 
 import com.uadaf.uadab.RAND
+import khttp.get
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import java.awt.Color
-import java.net.URL
-import java.util.stream.Collectors
 
 private lateinit var xkcdColors: Map<String, Color>
 
@@ -19,11 +18,12 @@ fun getXkcdColors(): Deferred<Map<String, Color>> {
 }
 
 private fun loadColors(): Map<String, Color> {
-    xkcdColors = URL("http://xkcd.com/color/rgb.txt").openStream().bufferedReader()
-            .lines()
-            .skip(1) //Skip license
+    xkcdColors = get("http://xkcd.com/color/rgb.txt").text.removeSuffix("\n")
+            .lineSequence()
+            .drop(1) //Skip license
             .map { it.split("\t") }
-            .collect(Collectors.toMap<List<String>, String, Color>({ it[0] }, { Color(it[1].removePrefix("#").toInt(16)) }))
+            .map { it[0] to it[1] }
+            .associate { (name, color) -> name to Color(color.removePrefix("#").toInt(16)) }
     return xkcdColors
 }
 

@@ -80,7 +80,7 @@ object UADABEventListener : ListenerAdapter() {
                 Users.save()
                 SystemIntegrityProtection.save()
             } catch (ex: IOException) {
-                UADAB.log.log(ex)
+                UADAB.log.error(ex)
             }
 
         }

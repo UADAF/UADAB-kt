@@ -161,7 +161,7 @@ object QuoteCommands : ICommandList {
                 }
                 createEmbeds(quotes, e)
             } catch (ex: Exception) {
-                UADAB.log.log(ex)
+                UADAB.log.error(ex)
             }
         }
     }

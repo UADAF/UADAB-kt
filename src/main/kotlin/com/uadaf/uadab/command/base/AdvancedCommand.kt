@@ -18,8 +18,7 @@ open class AdvancedCommand(private val action: CommandAction, private val onDeni
             try {
                 action(e)
             } catch (throwable: Throwable) {
-                UADAB.log.warn(String.format("Command $name encountered an exception"))
-                UADAB.log.log(throwable)
+                UADAB.log.warn(String.format("Command $name encountered an exception"), throwable)
             }
 
         } else {

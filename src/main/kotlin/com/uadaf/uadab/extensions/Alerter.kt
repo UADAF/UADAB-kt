@@ -2,11 +2,11 @@
 
 package com.uadaf.uadab.extensions
 
-import com.gt22.randomutils.log.SimpleLog
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.users.UADABUser
 import com.uadaf.uadab.users.Users
 import com.uadaf.uadab.utils.EmbedUtils
+import org.apache.commons.logging.impl.SimpleLog
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect
@@ -17,7 +17,7 @@ import java.awt.Color
 
 @WebSocket
 object Alerter : IExtension {
-    private val log = SimpleLog.getLog("UADAB#Alert").apply { level = SimpleLog.Level.DEBUG }
+    private val log = SimpleLog("UADAB#Alert").apply { level = UADAB.log.level }
 
 
     //val client: TextToSpeechClient

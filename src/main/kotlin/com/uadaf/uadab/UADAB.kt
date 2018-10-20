@@ -2,7 +2,6 @@ package com.uadaf.uadab
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.gt22.randomutils.log.SimpleLog
 import com.jagrosh.jdautilities.command.CommandClient
 import com.jagrosh.jdautilities.command.CommandClientBuilder
 import com.uadaf.uadab.command.ClassificationCommands
@@ -21,6 +20,7 @@ import net.dv8tion.jda.core.OnlineStatus
 import net.dv8tion.jda.core.entities.Game
 import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.hooks.EventListener
+import org.apache.commons.logging.impl.SimpleLog
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
@@ -28,7 +28,7 @@ import java.util.*
 
 object UADAB {
 
-    val log: SimpleLog = SimpleLog.getLog("UADAB")
+    val log: SimpleLog = SimpleLog("UADAB")
     var claimCode: UUID? = null
     lateinit var config: Config
         private set
@@ -43,7 +43,7 @@ object UADAB {
     @JvmStatic
     fun main(args: Array<String>) {
         startTime = System.currentTimeMillis()
-        if (args.contains("-d") || args.contains("--debug")) log.level = SimpleLog.Level.DEBUG
+        if (args.contains("-d") || args.contains("--debug")) log.level = SimpleLog.LOG_LEVEL_DEBUG
         System.setProperty("org.slf4j.simpleLogger.logFile", "System.out") //Redirect slf4j-simple to System.out from System.err
         log.info("Initializing")
         config = ConfigUtils.loadConfig(Config::class.java, "config.json", JsonObject() as JsonElement)
