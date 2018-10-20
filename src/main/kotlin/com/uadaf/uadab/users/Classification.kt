@@ -2,8 +2,6 @@ package com.uadaf.uadab.users
 
 import com.uadaf.uadab.utils.Boxes
 import com.uadaf.uadab.utils.EmbedUtils
-import com.uadaf.uadab.utils.ImageUtils
-import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.runBlocking
 import org.apache.commons.collections4.bidimap.DualHashBidiMap
 import java.awt.Color

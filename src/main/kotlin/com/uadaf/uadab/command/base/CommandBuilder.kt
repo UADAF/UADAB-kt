@@ -1,7 +1,6 @@
 package com.uadaf.uadab.command.base
 
 import com.jagrosh.jdautilities.command.Command
-import com.jagrosh.jdautilities.command.CommandEvent
 import com.uadaf.uadab.users.Classification
 import com.uadaf.uadab.users.NORMAL
 import com.uadaf.uadab.utils.EmbedUtils

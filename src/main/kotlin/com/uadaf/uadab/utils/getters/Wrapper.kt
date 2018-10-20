@@ -1,7 +1,5 @@
 package com.uadaf.uadab.utils.getters
 
-import java.util.Optional
-
 class Wrapper<T: Any> {
 
     private var single: T? = null

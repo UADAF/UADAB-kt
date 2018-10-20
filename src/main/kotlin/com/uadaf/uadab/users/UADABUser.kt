@@ -7,7 +7,10 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.utils.*
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.runBlocking
-import net.dv8tion.jda.core.entities.*
+import net.dv8tion.jda.core.entities.Member
+import net.dv8tion.jda.core.entities.User
+import net.dv8tion.jda.core.entities.VoiceChannel
+import net.dv8tion.jda.core.entities.VoiceState
 import org.apache.commons.logging.impl.SimpleLog
 import java.nio.file.Files
 import java.nio.file.Path

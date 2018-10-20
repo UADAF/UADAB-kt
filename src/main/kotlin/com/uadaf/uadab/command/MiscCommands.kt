@@ -7,12 +7,12 @@ import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.users.EVERYONE
 import com.uadaf.uadab.utils.*
 import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.async as kAsync
 import kotlinx.coroutines.experimental.launch
 import java.awt.Color
 import java.awt.Color.RED
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
+import kotlinx.coroutines.experimental.async as kAsync
 
 object MiscCommands : ICommandList {
     override val cat = AdvancedCategory("Misc", Color(0x95a3a6), "http://52.48.142.75/images/math_compass.png")

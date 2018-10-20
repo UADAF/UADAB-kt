@@ -6,7 +6,6 @@ import org.apache.batik.transcoder.TranscoderInput
 import org.apache.batik.transcoder.image.PNGTranscoder
 import java.awt.Color
 import java.awt.image.BufferedImage
-import java.io.BufferedReader
 import java.io.StringReader
 
 

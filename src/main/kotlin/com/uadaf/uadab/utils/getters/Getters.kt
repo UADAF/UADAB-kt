@@ -4,8 +4,6 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.users.UADABUser
 import com.uadaf.uadab.users.Users
 import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.User
-import java.util.regex.Pattern
 import java.util.stream.Collectors
 
 object Getters {
