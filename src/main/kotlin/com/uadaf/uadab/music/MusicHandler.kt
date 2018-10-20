@@ -1,6 +1,5 @@
 package com.uadaf.uadab.music
 
-import com.gt22.randomutils.Instances
 import com.gt22.uadam.data.BaseData
 import com.gt22.uadam.data.MusicContext
 import com.gt22.uadam.data.Song
@@ -11,6 +10,7 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import com.uadaf.uadab.RAND
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.music.MusicCommands
 import com.uadaf.uadab.utils.random
@@ -210,7 +210,7 @@ object MusicHandler {
                         }
                     } else {
                         var alreadyIn = 0
-                        while (load(validSongs.random(Instances.getRand())!!, guild, args).first
+                        while (load(validSongs.random(RAND)!!, guild, args).first
                                 == LoadResult.ALREADY_IN_QUEUE && alreadyIn++ < 1000) {
                         }
                         if (alreadyIn >= 1000) {
@@ -221,6 +221,6 @@ object MusicHandler {
                     }
             )
         }
-        return rets.random(Instances.getRand())!!
+        return rets.random(RAND)!!
     }
 }

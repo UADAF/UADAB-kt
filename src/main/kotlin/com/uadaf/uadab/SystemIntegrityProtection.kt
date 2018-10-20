@@ -2,7 +2,6 @@ package com.uadaf.uadab
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.gt22.randomutils.Instances
 import com.uadaf.uadab.utils.arr
 import com.uadaf.uadab.utils.obj
 import com.uadaf.uadab.utils.set
@@ -21,7 +20,7 @@ object SystemIntegrityProtection {
         if(!Files.exists(sipFilePath)) {
             allowedNicks = mutableSetOf(defaultNick)
         } else {
-            val json = Instances.getParser().parse(Files.newBufferedReader(sipFilePath)).obj
+            val json = PARSER.parse(Files.newBufferedReader(sipFilePath)).obj
             allowedNicks = mutableSetOf()
             json["allowedNicks"].arr.forEach{ allowedNicks.add(it.str) }
         }
@@ -32,7 +31,7 @@ object SystemIntegrityProtection {
         allowedNicks.forEach(arr::add)
         val json = JsonObject()
         json["allowedNicks"] = arr
-        Files.write(sipFilePath, Instances.getGson().toJson(json).toByteArray(Charsets.UTF_8))
+        Files.write(sipFilePath, GSON.toJson(json).toByteArray(Charsets.UTF_8))
     }
 
 }

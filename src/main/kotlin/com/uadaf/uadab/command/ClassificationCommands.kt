@@ -12,7 +12,6 @@ import com.uadaf.uadab.users.Users
 import com.uadaf.uadab.utils.EmbedUtils
 import com.uadaf.uadab.utils.getters.Getters
 import com.uadaf.uadab.utils.getters.Wrapper
-import kotlinx.coroutines.experimental.async as kAsync
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.GuildVoiceState
@@ -21,6 +20,7 @@ import java.awt.Color
 import java.awt.Color.RED
 import java.awt.Color.YELLOW
 import java.util.regex.Pattern
+import kotlinx.coroutines.experimental.async as kAsync
 
 
 object ClassificationCommands : ICommandList {

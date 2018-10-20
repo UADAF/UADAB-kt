@@ -1,6 +1,5 @@
 package com.uadaf.uadab
 
-import com.gt22.randomutils.Instances
 import com.uadaf.uadab.command.SystemCommands
 import com.uadaf.uadab.users.ADMIN_OR_INTERFACE
 import com.uadaf.uadab.users.Classification
@@ -24,7 +23,6 @@ import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleRemoveEvent
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.core.events.user.UserAvatarUpdateEvent
-import net.dv8tion.jda.core.events.user.UserNameUpdateEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import java.awt.Color
 import java.io.IOException
@@ -109,7 +107,7 @@ object UADABEventListener : ListenerAdapter() {
                 val user = Users[user]
                 if (cls != user.classification) {
                     user.classification = cls
-                    Instances.getExecutor().submit {
+                    launch {
                         guild.defaultChannel?.sendSelfDeletingMessage(EmbedUtils.create(
                                 cls.color,
                                 "Classification changed",
@@ -128,7 +126,7 @@ object UADABEventListener : ListenerAdapter() {
             Classification.getClassificationByRole(role.name)?.let { cls ->
                 val user = Users[user]
                 user.classification = Classification.IRRELEVANT
-                Instances.getExecutor().submit {
+                launch {
                     guild.defaultChannel?.sendSelfDeletingMessage(EmbedUtils.create(
                             cls.color,
                             "Classification changed",
@@ -147,7 +145,7 @@ object UADABEventListener : ListenerAdapter() {
                 val classification = user.classification
                 guild.getRolesByName(classification.role, false).firstOrNull()?.let { role ->
                     member.roles.add(role)
-                    Instances.getExecutor().submit {
+                    launch {
                         guild.defaultChannel?.sendSelfDeletingMessage(EmbedUtils.create(
                                 classification.color,
                                 "${classification.name} detected",

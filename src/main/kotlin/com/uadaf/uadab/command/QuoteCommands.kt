@@ -2,9 +2,10 @@ package com.uadaf.uadab.command
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.gt22.randomutils.Instances
 import com.jagrosh.jdautilities.command.Command
 import com.jagrosh.jdautilities.command.CommandEvent
+import com.uadaf.uadab.PARSER
+import com.uadaf.uadab.RAND
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.ICommandList
@@ -12,7 +13,6 @@ import com.uadaf.uadab.users.ASSETS
 import com.uadaf.uadab.utils.*
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.entities.MessageEmbed
 import java.awt.Color
 import java.awt.Color.RED
 import java.io.IOException
@@ -28,7 +28,7 @@ object QuoteCommands : ICommandList {
 
     private val totalQuotes: Int
         get() {
-            val rep = Instances.getParser().parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
+            val rep = PARSER.parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                     "task" to "GET",
                     "mode" to "total"))
                     .build().inputStream, StandardCharsets.UTF_8)).obj
@@ -44,7 +44,7 @@ object QuoteCommands : ICommandList {
             try {
                 when {
                     args.isEmpty() -> //Random
-                        sendQuoteByPos(Instances.getRand().nextInt(totalQuotes) + 1, this)
+                        sendQuoteByPos(RAND.nextInt(totalQuotes) + 1, this)
 
                     args.matches("^\\d+$".toRegex()) -> //Position
                         sendQuoteByPos(Integer.parseInt(args), this)
@@ -86,7 +86,7 @@ object QuoteCommands : ICommandList {
                     }
                     launch {
                         try {
-                            val r = Instances.getParser().parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
+                            val r = PARSER.parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                                     "task" to "ADD",
                                     "addby" to member.user.name,
                                     "author" to args[0],
@@ -110,7 +110,7 @@ object QuoteCommands : ICommandList {
     }
 
     private fun getQuoteByPos(pos: Int): JsonObject {
-        return Instances.getParser().parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
+        return PARSER.parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                 "task" to "GET",
                 "mode" to "pos",
                 "pos" to Integer.toString(pos)))
@@ -118,34 +118,31 @@ object QuoteCommands : ICommandList {
     }
 
     private fun sendQuoteByPos(pos: Int, e: CommandEvent) {
-        Instances.getExecutor().submit {
+        launch {
             val rep = getQuoteByPos(pos)
             sendQuote(rep, e, pos)
         }
     }
 
-    private fun createEmbeds(quotes: Iterable<JsonObject>): List<MessageEmbed> {
-        val ret = mutableListOf<MessageEmbed>()
-        var fieldCount = 0
-        var embed = EmbedBuilder()
-                .setColor(cat.color)
-                .setThumbnail(cat.img)
-        quotes.forEach {
-            embed.addField("#${it["id"].str} ${it["author"].str}:", it["quote"].str, false)
-            if (++fieldCount >= 25) {
-                ret.add(embed.build())
-                fieldCount = 0
-                embed = EmbedBuilder()
-                        .setColor(cat.color)
-                        .setThumbnail(cat.img)
+    private fun createEmbeds(quotes: Iterable<JsonObject>, e: CommandEvent) {
+        paginatedEmbed {
+            pattern {
+                color = cat.color
+                thumbnail = cat.img
+            }
+            sender = e::reply
+            quotes.forEach {
+                field {
+                    name = "#${it["id"].str} ${it["author"].str}:"
+                    value = it["quote"].str
+                    inline = false
+                }
             }
         }
-        ret.add(embed.build())
-        return ret
     }
 
     private fun getQuoteCount(count: Int, e: CommandEvent) {
-        Instances.getExecutor().submit {
+        launch {
             try {
                 val total = totalQuotes
                 val sentQuotes = mutableSetOf<Int>()
@@ -153,7 +150,7 @@ object QuoteCommands : ICommandList {
                 for (i in 0 until count) {
                     var id: Int
                     do {
-                        id = Instances.getRand().nextInt(total) + 1
+                        id = RAND.nextInt(total) + 1
                     } while (sentQuotes.contains(id))
                     val rep = getQuoteByPos(id)
                     quotes.add(rep)
@@ -162,7 +159,7 @@ object QuoteCommands : ICommandList {
                         break
                     }
                 }
-                createEmbeds(quotes).forEach(e::reply)
+                createEmbeds(quotes, e)
             } catch (ex: Exception) {
                 UADAB.log.log(ex)
             }
@@ -170,14 +167,14 @@ object QuoteCommands : ICommandList {
     }
 
     private fun getQuotesFromTo(from: String, to: String, e: CommandEvent) {
-        Instances.getExecutor().submit {
-            val rep = Instances.getParser().parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
+        launch {
+            val rep = PARSER.parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                     "task" to "GET",
                     "mode" to "fromto",
                     "from" to if (from.toInt() < 1) "1" else from,
                     "to" to to))
                     .build().inputStream, StandardCharsets.UTF_8)).obj
-            createEmbeds(rep["quotes"].arr.map(JsonElement::obj)).forEach(e::reply)
+            createEmbeds(rep["quotes"].arr.map(JsonElement::obj), e)
         }
     }
 

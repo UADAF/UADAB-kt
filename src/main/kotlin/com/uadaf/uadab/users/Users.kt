@@ -1,10 +1,10 @@
 package com.uadaf.uadab.users
 
 import com.google.gson.JsonObject
-import com.gt22.randomutils.Instances
 import com.gt22.randomutils.log.SimpleLog
 import com.jagrosh.jdautilities.command.CommandEvent
 import com.jagrosh.jdautilities.commons.utils.FinderUtil
+import com.uadaf.uadab.GSON
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.utils.arr
 import com.uadaf.uadab.utils.obj
@@ -212,7 +212,7 @@ object Users {
                 if (!Files.exists(file)) {
                     Files.createFile(file)
                 }
-                Files.write(file, Instances.getGson().toJson(u.data).toByteArray(StandardCharsets.UTF_8))
+                Files.write(file, GSON.toJson(u.data).toByteArray(StandardCharsets.UTF_8))
                 log.debug(String.format("User '%s' saved", n))
             })
         }

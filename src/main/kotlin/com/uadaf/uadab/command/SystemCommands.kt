@@ -1,6 +1,5 @@
 package com.uadaf.uadab.command
 
-import com.gt22.randomutils.Instances
 import com.jagrosh.jdautilities.command.Command
 import com.jagrosh.jdautilities.command.CommandEvent
 import com.uadaf.uadab.SystemIntegrityProtection
@@ -19,6 +18,7 @@ import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
 import java.awt.Color
 import java.awt.Color.*
+import java.security.SecureRandom
 import java.sql.SQLException
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -32,7 +32,7 @@ object SystemCommands : ICommandList {
 
     private fun createToken(): String {
         val arr = ByteArray(64)
-        Instances.getRand().nextBytes(arr)
+        SecureRandom().nextBytes(arr)
         return Base64.getUrlEncoder().encodeToString(arr)
     }
 
@@ -174,7 +174,7 @@ object SystemCommands : ICommandList {
                 val author = Users[this]
                 reply(RED, "Rejecting reboot", "You have no permission to reboot this system\nContacting Admin", author.avatarWithClassUrl)
                 reactError()
-                Instances.getExecutor().submit {
+                launch {
                     UADAB.contactAdmin(EmbedUtils.create(
                             YELLOW,
                             "Shutdown attempt detected",

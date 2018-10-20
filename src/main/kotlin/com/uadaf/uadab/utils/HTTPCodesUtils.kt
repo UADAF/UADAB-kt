@@ -1,13 +1,15 @@
 package com.uadaf.uadab.utils
 
 import com.google.gson.JsonElement
-import com.gt22.randomutils.Instances
+import com.uadaf.uadab.PARSER
 import com.uadaf.uadab.UADAB
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import org.apache.http.HttpException
-import org.apache.http.client.methods.HttpGet
+import java.net.ConnectException
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.*
 import java.util.function.BinaryOperator
 import java.util.function.Function
@@ -28,12 +30,12 @@ object HTTPCodesUtils {
     }
 
     private fun loadCodes(): Map<Int, HTTPStatusCode> {
-        val request = Instances.getHttpClient().execute(HttpGet(codesURL))
-        if (request.statusLine.statusCode != 200) {
-            throw HttpException(request.statusLine.reasonPhrase)
+        val req: HttpURLConnection = URL(codesURL).openConnection() as HttpURLConnection
+        if (req.responseCode != 200) {
+            throw ConnectException(req.responseMessage)
         }
         try {
-            val json = Instances.getParser().parse(request.entity.content.bufferedReader()).arr
+            val json = PARSER.parse(req.inputStream.bufferedReader()).arr
             codesData = json.map(JsonElement::obj).filter { it["code"].asString.toIntOrNull() != null }.map {
                 HTTPStatusCode(it["code"].str.toInt(), it["phrase"].str, it["description"].str.removeSurrounding("\"").capitalize())
             }.stream().collect(Collectors.toMap<HTTPStatusCode, Int, HTTPStatusCode, TreeMap<Int, HTTPStatusCode>>(

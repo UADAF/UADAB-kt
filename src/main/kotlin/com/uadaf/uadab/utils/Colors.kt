@@ -1,11 +1,11 @@
 package com.uadaf.uadab.utils
 
-import com.gt22.randomutils.Instances
+import com.uadaf.uadab.RAND
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
-import org.apache.http.client.methods.HttpGet
 import java.awt.Color
+import java.net.URL
 import java.util.stream.Collectors
 
 private lateinit var xkcdColors: Map<String, Color>
@@ -19,7 +19,7 @@ fun getXkcdColors(): Deferred<Map<String, Color>> {
 }
 
 private fun loadColors(): Map<String, Color> {
-    xkcdColors = Instances.getHttpClient().execute(HttpGet("http://xkcd.com/color/rgb.txt")).entity.content.bufferedReader()
+    xkcdColors = URL("http://xkcd.com/color/rgb.txt").openStream().bufferedReader()
             .lines()
             .skip(1) //Skip license
             .map { it.split("\t") }
@@ -40,7 +40,7 @@ val poiColors: Map<String, Color> by lazy {
 fun randomColor(rMin: Int = 0, rMax: Int = 0xFF,
                 gMin: Int = 0, gMax: Int = 0xFF,
                 bMin: Int = 0, bMax: Int = 0xFF): Color {
-    val rnd = Instances.getRand()
+    val rnd = RAND
     val r = rnd.nextInt(rMax - rMin + 1) + rMin
     val g = rnd.nextInt(gMax - gMin + 1) + gMin
     val b = rnd.nextInt(bMax - bMin + 1) + bMin

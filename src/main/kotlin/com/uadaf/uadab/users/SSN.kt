@@ -1,6 +1,6 @@
 package com.uadaf.uadab.users
 
-import com.gt22.randomutils.Instances
+import com.uadaf.uadab.RAND
 
 class SSN internal constructor(val intVal: Int) {
 
@@ -23,7 +23,7 @@ class SSN internal constructor(val intVal: Int) {
     companion object {
 
         internal fun randomSSN(): SSN {
-            return SSN(Instances.getRand().ints(9, 0, 10).reduce {i1, i2 -> i1 * 10 + i2}.asInt)
+            return SSN(RAND.ints(9, 0, 10).reduce { i1, i2 -> i1 * 10 + i2}.asInt)
         }
     }
 }

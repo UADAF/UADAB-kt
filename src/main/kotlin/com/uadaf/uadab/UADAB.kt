@@ -2,11 +2,13 @@ package com.uadaf.uadab
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.gt22.randomutils.Instances
 import com.gt22.randomutils.log.SimpleLog
 import com.jagrosh.jdautilities.command.CommandClient
 import com.jagrosh.jdautilities.command.CommandClientBuilder
-import com.uadaf.uadab.command.*
+import com.uadaf.uadab.command.ClassificationCommands
+import com.uadaf.uadab.command.MiscCommands
+import com.uadaf.uadab.command.QuoteCommands
+import com.uadaf.uadab.command.SystemCommands
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.command.music.MusicCommands
 import com.uadaf.uadab.extensions.ExtensionRegistry
@@ -102,7 +104,7 @@ object UADAB {
 
     fun parse(file: Path): JsonElement {
         val r = Files.newBufferedReader(file)
-        val ret = Instances.getParser().parse(r)
+        val ret = PARSER.parse(r)
         r.close()
         return ret
     }

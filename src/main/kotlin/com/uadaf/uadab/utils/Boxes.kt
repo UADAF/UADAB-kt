@@ -17,7 +17,7 @@ object Boxes {
         var svg = javaClass.getResourceAsStream("/box.svg").bufferedReader().readLines().joinToString("\n")
         svg = svg.replace("%PRIMARY_COLOR%", "#${Integer.toHexString(primaryColor.rgb).substring(2)}")
         svg = svg.replace("%SECONDARY_COLOR%", "#${Integer.toHexString(secondaryColor.rgb).substring(2)}")
-        val reader = BufferedReader(StringReader(svg))
+        val reader = StringReader(svg)
         val svgImage = TranscoderInput(reader)
 
         val transcoder = BufferedImageTranscoder(BufferedImage.TYPE_INT_ARGB)

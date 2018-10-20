@@ -1,14 +1,14 @@
 package com.uadaf.uadab.command.music
 
-import com.gt22.randomutils.Instances
 import com.gt22.uadam.data.*
-import com.uadaf.uadab.music.MusicHandler.searchImg
 import com.jagrosh.jdautilities.command.CommandEvent
+import com.uadaf.uadab.RAND
 import com.uadaf.uadab.ReactionHandler
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCommand
 import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.music.MusicHandler.LoadResult.*
+import com.uadaf.uadab.music.MusicHandler.searchImg
 import com.uadaf.uadab.users.ASSETS
 import com.uadaf.uadab.utils.EmbedUtils
 import com.uadaf.uadab.utils.random
@@ -111,7 +111,7 @@ object PlayCommand : AdvancedCommand({ PlayCommand.action(this) }, { _ -> PlayCo
                     return
                 }
                 else -> MusicHandler.load(
-                        variants.random(Instances.getRand())!!,
+                        variants.random(RAND)!!,
                         e.guild,
                         musicArgs
                 )
@@ -161,7 +161,6 @@ object PlayCommand : AdvancedCommand({ PlayCommand.action(this) }, { _ -> PlayCo
             FAIL -> Color.RED to (ret.second ?: "Failed to load track") to null
             UNKNOWN -> Color.BLACK to "Something really wrong happened" to null
         }
-        println(img)
         e.reply(EmbedUtils.create(title, "Result:", text, img ?: MusicCommands.cat.img))
     }
 }
