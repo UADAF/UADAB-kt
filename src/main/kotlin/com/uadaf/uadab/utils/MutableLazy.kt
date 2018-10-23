@@ -4,7 +4,7 @@ import kotlin.reflect.KProperty
 
 private object UNINITIALIZED
 
-class MutableLazy<T>(val initializer: () -> T) {
+class MutableLazy<T>(var initializer: () -> T) {
     var value: Any? = UNINITIALIZED
 
 
@@ -19,6 +19,12 @@ class MutableLazy<T>(val initializer: () -> T) {
 
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
         this.value = value
+    }
+
+    fun clearValue() {
+        if(value != UNINITIALIZED) {
+            value = UNINITIALIZED
+        }
     }
 
     fun isInitialized() = value != UNINITIALIZED

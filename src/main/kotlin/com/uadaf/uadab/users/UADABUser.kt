@@ -37,9 +37,7 @@ class UADABUser internal constructor(name: String) {
         set(classification) {
             field = classification
             data["CLASSIFICATION"] = classification.codename
-            if(awcuDelegate.isInitialized()) { //Only update cached image if it has been loaded
-                avatarWithClassUrl = getAvatarWithClassUrl(classification)
-            }
+            onAvatarUpdate() //Update avatar for new classification
         }
 
     private val aliases: JsonArray
@@ -82,9 +80,7 @@ class UADABUser internal constructor(name: String) {
 
     //Update cached image if avatar changed
     fun onAvatarUpdate() {
-        if(awcuDelegate.isInitialized()) { //Only update cached image if it has been loaded
-            avatarWithClassUrl = getAvatarWithClassUrl()
-        }
+        awcuDelegate.clearValue()
     }
 
     fun audioChannel(): VoiceChannel? =
