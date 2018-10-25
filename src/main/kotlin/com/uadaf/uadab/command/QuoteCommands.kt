@@ -39,7 +39,7 @@ object QuoteCommands : ICommandList {
         }
 
     override fun init(): Array<Command> {
-        return arrayOf(command("quote", "add ore get quote") {
+        return arrayOf(command("quote", "append ore get quote") {
             val args = args
             try {
                 when {
@@ -59,7 +59,7 @@ object QuoteCommands : ICommandList {
                     }
 
                     else -> {
-                        reply(RED, "Invalid args", "Args should be '(add|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))'", cat.img)
+                        reply(RED, "Invalid args", "Args should be '(append|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))'", cat.img)
                         reactWarning()
                         return@command
                     }
@@ -77,8 +77,8 @@ object QuoteCommands : ICommandList {
                 }
                 reactError()
             }
-        }.setArguments("(add|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))").setChildren(
-                command("add", "adds quote") {
+        }.setArguments("(append|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))").setChildren(
+                command("append", "adds quote") {
                     val args = args.split(' ', limit = 2)
                     if (args.size != 2) {
                         reply(RED, "Invalid args", "Args should be '%author% %quote%'", cat.img)
@@ -131,13 +131,7 @@ object QuoteCommands : ICommandList {
                 thumbnail = cat.img
             }
             sender = e::reply
-            quotes.forEach {
-                field {
-                    name = "#${it["id"].str} ${it["author"].str}:"
-                    value = it["quote"].str
-                    inline = false
-                }
-            }
+            quotes.forEach { append field "#${it["id"].str} ${it["author"].str}:" to it["quote"].str }
         }
     }
 

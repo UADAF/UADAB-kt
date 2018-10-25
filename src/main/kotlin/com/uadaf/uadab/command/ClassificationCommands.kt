@@ -10,9 +10,11 @@ import com.uadaf.uadab.users.Classification
 import com.uadaf.uadab.users.UADABUser
 import com.uadaf.uadab.users.Users
 import com.uadaf.uadab.utils.EmbedUtils
+import com.uadaf.uadab.utils.embed
 import com.uadaf.uadab.utils.getters.Getters
 import com.uadaf.uadab.utils.getters.Wrapper
 import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.runBlocking
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.GuildVoiceState
 import net.dv8tion.jda.core.entities.Member
@@ -55,36 +57,30 @@ object ClassificationCommands : ICommandList {
                 val img = usr.asyncGetAvatarWithClassUrl()
 
                 val memberInfo = UADAB.bot.getMutualGuilds(usr.discordUser).map { it.getMember(usr.discordUser) }
-                val roles = kAsync {
-                    memberInfo.flatMap(Member::getRoles).distinct().joinToString("\n") { "${it.guild.name}#${it.name}" }
-                }
-                val knownNames = kAsync {
-                    memberInfo.map(Member::getEffectiveName).distinct().joinToString("\n")
-                }
-                val onlineStatus = kAsync {
-                    memberInfo.first().onlineStatus.key.replace("dnd", "Do not disturb")
-                }
-                val voiceChannel = kAsync {
-                    memberInfo.stream()
+                val roles = memberInfo.flatMap(Member::getRoles).distinct().joinToString("\n") { "${it.guild.name}#${it.name}" }
+                val knownNames = memberInfo.map(Member::getEffectiveName).distinct().joinToString("\n")
+                val onlineStatus = memberInfo.first().onlineStatus.key.replace("dnd", "Do not disturb")
+                val voiceChannel = memberInfo.stream()
                             .map(Member::getVoiceState)
                             .filter(GuildVoiceState::inVoiceChannel)
                             .map(GuildVoiceState::getChannel)
                             .findAny()
                             .map { "${it.guild.name}#${it.name}" }.orElse("None")
-                }
-                reply(EmbedBuilder()
-                        .setTitle("Info about " + usr.name, null)
-                        .addField("Classification", cls.name, true)
-                        .addField("SSN", usr.ssn.getSSNString(false), true)
-                        .addField("Known names", knownNames.await(), true)
-                        .addField("Discord id", usr.discordUser.id, true)
-                        .addField("Voice Interface Location", voiceChannel.await(), true)
-                        .addField("Online status", onlineStatus.await(), true)
-                        .addField("Roles", roles.await(), false)
-                        .addField("Aliases", usr.allAliases.joinToString("\n"), true)
-                        .setColor(cls.color)
-                        .setThumbnail(img.await())
-                        .build())
+
+                reply(embed {
+                    title = "Info about " + usr.name
+                    inline field "Classification" to cls.name
+                    inline field "SSN" to usr.ssn.getSSNString(false)
+                    inline field "Known names" to knownNames
+                    inline field "Discord id" to usr.discordUser.id
+                    inline field "Voice Interface Location" to voiceChannel
+                    inline field "Online status" to onlineStatus
+                    append field "Roles" to roles
+                    inline field "Aliases" to usr.allAliases.joinToString("\n")
+                    color = cls.color
+                    thumbnail = runBlocking { img.await() }
+
+                })
                 reactSuccess()
             }
         }.setAliases("mon").setArguments("%user% | %ssn%").build(), command("reclass", "Changes classification of specified user") {
@@ -109,9 +105,9 @@ object ClassificationCommands : ICommandList {
             reply(RED, "Permission denied", "Only Admin or Analog Interface can change classifications", Users[this].avatarWithClassUrl)
             reactWarning()
         }.build(), command("alias", "Add or remove alias for user") {
-            reply(RED, "Invalid command", "User 'alias add' or 'alias remove'", Classification.IRRELEVANT.getImg())
+            reply(RED, "Invalid command", "User 'alias append' or 'alias remove'", Classification.IRRELEVANT.getImg())
             reactWarning()
-        }.setChildren(command("add", "Adds alias") {
+        }.setChildren(command("append", "Adds alias") {
             val m = classSet.matcher(args)
             if (!m.matches() || m.groupCount() != 2) {
                 reply(RED, "Invalid args: '$args'", "Args should be '(user:alias)'", Classification.IRRELEVANT.getImg())
@@ -132,7 +128,7 @@ object ClassificationCommands : ICommandList {
                 }.setArguments("%alias%").build()).setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _ ->
             reply(RED, "Permission denied", "Only Admin or Analog Interface can change aliases", Users[this].avatarWithClassUrl)
             reactWarning()
-        }.setArguments("(add %user%:%alias%)|(remove %alias%)").build())
+        }.setArguments("(append %user%:%alias%)|(remove %alias%)").build())
     }
 
 

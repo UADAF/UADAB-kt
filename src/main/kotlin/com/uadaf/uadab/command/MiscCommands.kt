@@ -112,10 +112,7 @@ object MiscCommands : ICommandList {
                                 formatCode(c!!, description)
                             }
                             if (invalid.isNotEmpty()) {
-                                field {
-                                    name = "Some of these codes I couldn't recognize."
-                                    value = invalid.joinToString(", ")
-                                }
+                                append field "Some of these codes I couldn't recognize." to invalid.joinToString(", ")
                             }
                         }
                     }
@@ -124,12 +121,8 @@ object MiscCommands : ICommandList {
         }.setArguments("%code%").setAllowedClasses(EVERYONE).build())
     }
 
-    private fun PaginatedEmbedCreater.formatCode(c: HTTPStatusCode, description: Boolean) {
-        field {
-            name = "${c.code} - ${c.phrase}"
-            value = if (description) c.description else ""
-        }
-    }
+    private fun PaginatedEmbedCreater.formatCode(c: HTTPStatusCode, description: Boolean) =
+        append field "${c.code} - ${c.phrase}" to if (description) c.description else ""
 
     fun extractColor(c: String): Deferred<Color> {
         return kAsync {

@@ -9,12 +9,13 @@ import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.AdvancedCommand
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.users.*
+import com.uadaf.uadab.utils.BaseEmbedCreater
 import com.uadaf.uadab.utils.EmbedUtils
+import com.uadaf.uadab.utils.embed
 import com.uadaf.uadab.utils.getters.Getters
 import com.uadaf.uadab.utils.paginatedEmbed
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
-import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
 import java.awt.Color
 import java.awt.Color.*
@@ -147,16 +148,14 @@ object SystemCommands : ICommandList {
                     sendGeneralHelp(this)
                 } else {
                     val name = args
-                    val c = UADAB.commands.commands
-                            .filter { it is AdvancedCommand }
-                            .filter { it.name == name }.getOrNull(0)
+                    val c = UADAB.commands.commands.filter { it is AdvancedCommand }.firstOrNull { it.name == name }
                     if (c != null) {
                         val prefix = UADAB.commands.prefix
-                        val embed = EmbedBuilder()
-                                .setTitle("Command: ${c.name}", null)
-                                .setColor((c.category as AdvancedCategory).color)
-                        createHelpForCommand(embed, c as AdvancedCommand, prefix, false)
-                        reply(embed.build())
+                        reply(embed {
+                            title = "Command: ${c.name}"
+                            color = (c.category as AdvancedCategory).color
+                            createHelpForCommand(c as AdvancedCommand, prefix, false)
+                        })
                         reactSuccess()
                     } else {
                         reply("Command not found")
@@ -185,13 +184,14 @@ object SystemCommands : ICommandList {
     )
 
 
-    private fun createHelpForCommand(embed: EmbedBuilder, c: AdvancedCommand, prefix: String, inline: Boolean) {
+    private fun BaseEmbedCreater.createHelpForCommand(c: AdvancedCommand, prefix: String, inline: Boolean) {
+        val insert = if (inline) this.inline else this.append
         with(c) {
-            embed.addField("$prefix $name $arguments", help, inline)
-            embed.addField("Allowed for:", allowedFor.stream().map(Classification::name).distinct().reduce { s1, s2 -> s1 + '\n' + s2 }.get(), false)
+            insert field "$prefix $name $arguments" to help
+            append field "Allowed for:" to allowedFor.map(Classification::name).distinct().joinToString("\n")
             if (c.children.isNotEmpty()) {
                 val newPrefix = "$prefix ${c.name}"
-                c.children.forEach { createHelpForCommand(embed, it as AdvancedCommand, newPrefix, true) }
+                c.children.forEach { createHelpForCommand(it as AdvancedCommand, newPrefix, true) }
             }
         }
     }
@@ -210,10 +210,7 @@ object SystemCommands : ICommandList {
                         thumbnail = cat.img
                         title = cat.name
                     }
-                    field {
-                        name = "$prefix ${cmd.name} ${cmd.arguments}"
-                        value = cmd.help
-                    }
+                    append field "$prefix ${cmd.name} ${cmd.arguments}" to cmd.help
                 }
             }
         }

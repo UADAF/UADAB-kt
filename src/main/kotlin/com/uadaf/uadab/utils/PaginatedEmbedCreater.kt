@@ -52,6 +52,9 @@ open class BaseEmbedCreater {
             builder.setTitle(title, value)
         }
 
+    val append by lazy { FieldHolder(this, false) }
+    val inline by lazy { FieldHolder(this, true) }
+
     open fun text(init: BaseEmbedCreater.() -> String) {
         +init()
     }
@@ -73,6 +76,25 @@ open class BaseEmbedCreater {
         b.init()
         b.complete()
     }
+
+}
+
+
+class FieldHolder(val builder: BaseEmbedCreater, val inline: Boolean) {
+
+    class FieldBase(val builder: BaseEmbedCreater, val name: String, val inline: Boolean) {
+
+        infix fun to(value: String) {
+            builder.field {
+                name = this@FieldBase.name
+                this.value = value
+                inline = this@FieldBase.inline
+            }
+        }
+
+    }
+
+    infix fun field(name: String) = FieldBase(builder, name, inline)
 
 }
 

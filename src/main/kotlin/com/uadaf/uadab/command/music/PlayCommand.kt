@@ -20,7 +20,7 @@ object PlayCommand : AdvancedCommand({ PlayCommand.action(this) }, { _ -> PlayCo
     init {
         name = "play"
         help = "Play music"
-        arguments = "(%songName%|%songUrl%) [--all] [* i%count%]"
+        arguments = "(%songName%|%songUrl%) [--all] [* i%count%] [--first]"
         category = MusicCommands.cat
     }
 

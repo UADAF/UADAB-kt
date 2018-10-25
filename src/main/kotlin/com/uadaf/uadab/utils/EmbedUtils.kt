@@ -48,7 +48,7 @@ object EmbedUtils {
                 b64.close()
                 val base64 = os.toString("UTF-8")
 
-                JavaHttpRequestBuilder("${UADAB.config.IMAGE_DB_MANAGER}?mode=add&name=$name")
+                JavaHttpRequestBuilder("${UADAB.config.IMAGE_DB_MANAGER}?mode=append&name=$name")
                         .addPostParam("img", base64)
                         .build().inputStream.read() //Read required to make sure that request started
 

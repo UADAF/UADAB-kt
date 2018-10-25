@@ -32,10 +32,9 @@ object MusicCommands : ICommandList {
 
     override fun init(): Array<Command> {
         return arrayOf(PlayCommand, command("pause", "Pause playing") {
-            val g = guild
-            if (!MusicHandler.isPaused(g) && MusicHandler.playlistSize(g) > 0) {
-                MusicHandler.pause(g)
-                reply(GREEN, "Paused", "", MusicHandler.currentTrackImg(g))
+            if (!MusicHandler.isPaused(guild) && MusicHandler.playlistSize(guild) > 0) {
+                MusicHandler.pause(guild)
+                reply(GREEN, "Paused", "", MusicHandler.currentTrackImg(guild))
                 reactSuccess()
             } else {
                 reply(YELLOW, "Not playing", "", cat.img)

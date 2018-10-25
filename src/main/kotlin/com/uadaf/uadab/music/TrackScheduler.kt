@@ -15,7 +15,7 @@ class TrackScheduler(private val player: AudioPlayer) : AudioEventAdapter() {
     /**
      * Add the next track to queue or play right away if nothing is in the queue.
      *
-     * @param track The track to play or add to queue.
+     * @param track The track to play or append to queue.
      */
     fun queue(track: AudioTrack) {
         if (!player.startTrack(track, true)) {
