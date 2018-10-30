@@ -39,7 +39,7 @@ object QuoteCommands : ICommandList {
         }
 
     override fun init(): Array<Command> {
-        return arrayOf(command("quote", "append ore get quote") {
+        return arrayOf(command("quote", "add or get quote") {
             val args = args
             try {
                 when {
