@@ -10,18 +10,22 @@ import com.uadaf.uadab.music.MusicHandler
 import com.uadaf.uadab.music.MusicHandler.LoadResult.*
 import com.uadaf.uadab.music.MusicHandler.searchImg
 import com.uadaf.uadab.users.ASSETS
+import com.uadaf.uadab.users.Classification
 import com.uadaf.uadab.utils.EmbedUtils
 import com.uadaf.uadab.utils.random
 import net.dv8tion.jda.core.entities.MessageReaction
 import java.awt.Color
 
-object PlayCommand : AdvancedCommand({ PlayCommand.action(this) }, { _ -> PlayCommand.denied(this) }, ASSETS, false) {
+object PlayCommand : AdvancedCommand() {
 
     init {
         name = "play"
         help = "Play music"
         arguments = "(%songName%|%songUrl%) [--all] [* i%count%] [--first]"
         category = MusicCommands.cat
+        allowedFor = ASSETS
+        action = ::action
+        onDenied = ::denied
     }
 
     fun action(e: CommandEvent) {
@@ -120,7 +124,8 @@ object PlayCommand : AdvancedCommand({ PlayCommand.action(this) }, { _ -> PlayCo
         handleLoad(e, ret)
     }
 
-    fun denied(e: CommandEvent) {
+    @Suppress("UNUSED_PARAMETER")
+    fun denied(e: CommandEvent, unused: Set<Classification>) {
         e.reply(EmbedUtils.create(Color.RED, "You shall not play!", "", MusicCommands.cat.img))
     }
 

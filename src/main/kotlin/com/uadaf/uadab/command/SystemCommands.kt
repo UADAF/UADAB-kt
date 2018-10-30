@@ -202,7 +202,7 @@ object SystemCommands : ICommandList {
         paginatedEmbed {
             sender = e::reply
             UADAB.commands.commands.forEach { cmd ->
-                if (cmd is AdvancedCommand && !cmd.hidden) {
+                if (cmd is AdvancedCommand && !cmd.isHidden) {
                     if (cat != cmd.category) {
                         cat = cmd.category as AdvancedCategory
                         send()
