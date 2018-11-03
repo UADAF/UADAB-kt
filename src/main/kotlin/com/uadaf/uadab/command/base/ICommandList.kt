@@ -8,9 +8,9 @@ import java.awt.Color
 
 interface ICommandList {
     val cat: AdvancedCategory
-    fun init(): Array<Command>
+    fun init(): Array<out Command>
 
-    fun command(name: String, help: String, action: CommandEvent.() -> Unit): CommandBuilder {
+    fun command(name: String, help: String, action: CommandAction): CommandBuilder {
         return CommandBuilder().setName(name).setHelp(help).setAction(action).setCategory(cat)
     }
 

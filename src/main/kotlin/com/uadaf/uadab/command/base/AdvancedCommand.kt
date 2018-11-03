@@ -6,10 +6,11 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.users.Classification
 import com.uadaf.uadab.users.NORMAL
 import com.uadaf.uadab.users.Users
+import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.Permission
 
-typealias CommandAction = CommandEvent.() -> Unit
-typealias CommandDeniedAction = CommandEvent.(Set<Classification>) -> Unit
+typealias CommandAction = suspend CommandEvent.() -> Unit
+typealias CommandDeniedAction = suspend CommandEvent.(Set<Classification>) -> Unit
 
 open class AdvancedCommand : Command() {
 
@@ -19,15 +20,17 @@ open class AdvancedCommand : Command() {
 
     override fun execute(e: CommandEvent) {
         val user = Users[e]
-        if (allowedFor.contains(user.classification)) {
-            try {
-                action(e)
-            } catch (throwable: Throwable) {
-                UADAB.log.warn(String.format("Command $name encountered an exception"), throwable)
-            }
+        launch {
+            if (allowedFor.contains(user.classification)) {
 
-        } else {
-            e.onDenied(allowedFor)
+                try {
+                    action(e)
+                } catch (throwable: Throwable) {
+                    UADAB.log.warn(String.format("Command $name encountered an exception"), throwable)
+                }
+            } else {
+                e.onDenied(allowedFor)
+            }
         }
     }
 
@@ -60,11 +63,11 @@ open class AdvancedCommand : Command() {
         this.cooldown = cooldown
     }
 
-    fun setUserPermission(userPermissions: Array<out Permission>) {
+    fun setUserPermissions(userPermissions: Array<out Permission>) {
         this.userPermissions = userPermissions
     }
 
-    fun setBotPermission(botPermissions: Array<out Permission>) {
+    fun setBotPermissions(botPermissions: Array<out Permission>) {
         this.botPermissions = botPermissions
     }
 

@@ -26,8 +26,8 @@ class CommandBuilder {
             isHidden = false
             cooldown = 0
             allowedFor = NORMAL.toMutableSet()
-            setUserPermission(arrayOf())
-            setBotPermission(arrayOf())
+            setUserPermissions(arrayOf())
+            setBotPermissions(arrayOf())
             aliases = arrayOf()
             children = arrayOf()
         }
@@ -90,12 +90,12 @@ class CommandBuilder {
     }
 
     fun setUserPermissions(vararg userPermissions: Permission): CommandBuilder {
-        c.setUserPermission(userPermissions)
+        c.setUserPermissions(userPermissions)
         return this
     }
 
     fun setBotPermissions(vararg botPermissions: Permission): CommandBuilder {
-        c.setBotPermission(botPermissions)
+        c.setBotPermissions(botPermissions)
         return this
     }
 

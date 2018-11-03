@@ -9,21 +9,20 @@ import com.uadaf.uadab.RAND
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.ICommandList
+import com.uadaf.uadab.command.client.commandList
 import com.uadaf.uadab.users.ASSETS
 import com.uadaf.uadab.utils.*
-import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.EmbedBuilder
 import java.awt.Color
 import java.awt.Color.RED
 import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
-import java.util.regex.Pattern
 
 object QuoteCommands : ICommandList {
 
     override val cat = AdvancedCategory("Quotes", Color(0x434BAA), "http://52.48.142.75/images/quote_.png")
-    private val NFENumberExtract = Pattern.compile("For input string: \"(.*)\"")
+    private val NFENumberExtract = "For input string: \"(.*)\"".toRegex()
 
 
     private val totalQuotes: Int
@@ -31,60 +30,64 @@ object QuoteCommands : ICommandList {
             val rep = PARSER.parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                     "task" to "GET",
                     "mode" to "total"))
-                    .build().inputStream, StandardCharsets.UTF_8)).obj
+                    .build().inputStream, StandardCharsets.UTF_8).buffered()).obj
             if (rep["error"].bln) {
                 throw RuntimeException("Something went wrong: " + rep["msg"].str)
             }
             return rep["count"].int
         }
 
-    override fun init(): Array<Command> {
-        return arrayOf(command("quote", "add or get quote") {
-            val args = args
-            try {
-                when {
-                    args.isEmpty() -> //Random
-                        sendQuoteByPos(RAND.nextInt(totalQuotes) + 1, this)
+    override fun init(): Array<out Command> = commandList {
+        command("quote") {
+            help = "Add or get quote"
+            args = "(add|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))"
+            action {
+                try {
+                    when {
+                        //Random
+                        args.isEmpty() -> sendQuoteByPos(RAND.nextInt(totalQuotes) + 1, this)
+                        //Position
+                        args.matches("^\\d+$".toRegex()) -> sendQuoteByPos(Integer.parseInt(args), this)
 
-                    args.matches("^\\d+$".toRegex()) -> //Position
-                        sendQuoteByPos(Integer.parseInt(args), this)
+                        args.matches("^\\d+:\\d+$".toRegex()) -> { //From : To
+                            val range = args.split(":".toRegex(), 2)
+                            getQuotesFromTo(range[0], range[1], this)
+                        }
+                        //Count
+                        args.matches("^\\* \\d+$".toRegex()) ->
+                            getQuoteCount(Integer.parseInt(args.substring(2)), this)
 
-                    args.matches("^\\d+:\\d+$".toRegex()) -> { //From : To
-                        val fromto = args.split(":".toRegex(), 2)
-                        getQuotesFromTo(fromto[0], fromto[1], this)
+
+                        else -> {
+                            reply(RED, "Invalid args", "Args should be '(add|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))'", cat.img)
+                            reactWarning()
+                            return@action
+                        }
                     }
-
-                    args.matches("^\\* \\d+$".toRegex()) -> { //Count
-                        getQuoteCount(Integer.parseInt(args.substring(2)), this)
+                    reactSuccess()
+                } catch (e1: IOException) {
+                    reply("Something went wrong: ${e1.localizedMessage}")
+                    reactError()
+                } catch (e1: NumberFormatException) {
+                    if (NFENumberExtract.matches(e1.message!!)) {
+                        reply("Invalid number '${NFENumberExtract.find(e1.message!!)!!.groupValues[1]}'")
+                    } else {
+                        reply(e1.message)
                     }
-
-                    else -> {
-                        reply(RED, "Invalid args", "Args should be '(append|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))'", cat.img)
-                        reactWarning()
-                        return@command
-                    }
+                    reactError()
                 }
-                reactSuccess()
-            } catch (e1: IOException) {
-                reply("Something went wrong: ${e1.localizedMessage}")
-                reactError()
-            } catch (e1: NumberFormatException) {
-                val m = NFENumberExtract.matcher(e1.message)
-                if (m.matches()) {
-                    reply("Invalid number '${m.group(1)}'")
-                } else {
-                    reply(e1.message)
-                }
-                reactError()
             }
-        }.setArguments("(append|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))").setChildren(
-                command("append", "adds quote") {
-                    val args = args.split(' ', limit = 2)
-                    if (args.size != 2) {
-                        reply(RED, "Invalid args", "Args should be '%author% %quote%'", cat.img)
-                        reactError()
-                    }
-                    launch {
+            children {
+                command("add") {
+                    help = "Adds quote"
+                    args = "%author% %quote%"
+                    allowed to ASSETS
+                    action {
+                        val args = args.split(' ', limit = 2)
+                        if (args.size != 2) {
+                            reply(RED, "Invalid args", "Args should be '%author% %quote%'", cat.img)
+                            reactError()
+                        }
                         try {
                             val r = PARSER.parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
                                     "task" to "ADD",
@@ -105,8 +108,9 @@ object QuoteCommands : ICommandList {
                             reactWarning()
                         }
                     }
-                }.setAllowedClasses(ASSETS).setGuildOnly(false).setArguments("%author% %quote%").build()
-        ).build())
+                }
+            }
+        }
     }
 
     private fun getQuoteByPos(pos: Int): JsonObject {
@@ -118,10 +122,8 @@ object QuoteCommands : ICommandList {
     }
 
     private fun sendQuoteByPos(pos: Int, e: CommandEvent) {
-        launch {
-            val rep = getQuoteByPos(pos)
-            sendQuote(rep, e, pos)
-        }
+        val rep = getQuoteByPos(pos)
+        sendQuote(rep, e, pos)
     }
 
     private fun createEmbeds(quotes: Iterable<JsonObject>, e: CommandEvent) {
@@ -136,40 +138,36 @@ object QuoteCommands : ICommandList {
     }
 
     private fun getQuoteCount(count: Int, e: CommandEvent) {
-        launch {
-            try {
-                val total = totalQuotes
-                val sentQuotes = mutableSetOf<Int>()
-                val quotes = mutableListOf<JsonObject>()
-                for (i in 0 until count) {
-                    var id: Int
-                    do {
-                        id = RAND.nextInt(total) + 1
-                    } while (sentQuotes.contains(id))
-                    val rep = getQuoteByPos(id)
-                    quotes.add(rep)
-                    sentQuotes.add(id)
-                    if (sentQuotes.size >= total) {
-                        break
-                    }
+        try {
+            val total = totalQuotes
+            val sentQuotes = mutableSetOf<Int>()
+            val quotes = mutableListOf<JsonObject>()
+            for (i in 0 until count) {
+                var id: Int
+                do {
+                    id = RAND.nextInt(total) + 1
+                } while (sentQuotes.contains(id))
+                val rep = getQuoteByPos(id)
+                quotes.add(rep)
+                sentQuotes.add(id)
+                if (sentQuotes.size >= total) {
+                    break
                 }
-                createEmbeds(quotes, e)
-            } catch (ex: Exception) {
-                UADAB.log.error(ex)
             }
+            createEmbeds(quotes, e)
+        } catch (ex: Exception) {
+            UADAB.log.error(ex)
         }
     }
 
     private fun getQuotesFromTo(from: String, to: String, e: CommandEvent) {
-        launch {
-            val rep = PARSER.parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
-                    "task" to "GET",
-                    "mode" to "fromto",
-                    "from" to if (from.toInt() < 1) "1" else from,
-                    "to" to to))
-                    .build().inputStream, StandardCharsets.UTF_8)).obj
-            createEmbeds(rep["quotes"].arr.map(JsonElement::obj), e)
-        }
+        val rep = PARSER.parse(InputStreamReader(JavaHttpRequestBuilder(UADAB.config.QUOTER_URL).params(mapOf(
+                "task" to "GET",
+                "mode" to "fromto",
+                "from" to if (from.toInt() < 1) "1" else from,
+                "to" to to))
+                .build().inputStream, StandardCharsets.UTF_8)).obj
+        createEmbeds(rep["quotes"].arr.map(JsonElement::obj), e)
     }
 
     private fun sendQuote(quote: JsonObject, e: CommandEvent, id: Int) {

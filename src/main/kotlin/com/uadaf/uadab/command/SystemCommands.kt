@@ -8,6 +8,7 @@ import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.AdvancedCommand
 import com.uadaf.uadab.command.base.ICommandList
+import com.uadaf.uadab.command.client.commandList
 import com.uadaf.uadab.users.*
 import com.uadaf.uadab.utils.BaseEmbedCreater
 import com.uadaf.uadab.utils.EmbedUtils
@@ -30,11 +31,133 @@ object SystemCommands : ICommandList {
     override val cat: AdvancedCategory = AdvancedCategory("System", Color(0x5E5E5E), "http://52.48.142.75/images/gear.png")
 
 
-
     private fun createToken(): String {
         val arr = ByteArray(64)
         SecureRandom().nextBytes(arr)
         return Base64.getUrlEncoder().encodeToString(arr)
+    }
+
+    fun dslInit(): Array<out Command> = commandList {
+        command("ping") {
+            help = "Bot test"
+            hidden = true
+            action { reply("Pong!") }
+        }
+        command("claim") {
+            hidden = true
+            action {
+                if (UADAB.claimCode != null && args == UADAB.claimCode.toString()) {
+                    UADAB.claimCode = null
+                    UADAB.log.info("Admin found. Invalidating claim code")
+                    val user = Users[this]
+                    user.classification = Classification.ADMIN
+                    user.name = "Admin"
+                    reply(Classification.ADMIN.color, "Can You Hear Me?", "Hello, Admin", user.avatarWithClassUrl)
+                }
+            }
+        }
+        command("token") {
+            help = "Create bot-api token"
+            allowed to ADMIN_OR_INTERFACE
+            hidden = true
+            action {
+                val usr = Users[this]
+                replyInDm(
+                        try {
+                            if (TokenManager.hasToken(usr.name)) {
+                                EmbedUtils.create(RED, "Error",
+                                        "You already have token\n Run 'token regen' to explicitly recreate it", cat.img)
+                            } else {
+                                val token = createToken()
+                                TokenManager.putToken(usr.name, token)
+                                EmbedUtils.create(GREEN, "Your token", token, cat.img)
+
+                            }
+                        } catch (ex: SQLException) {
+                            EmbedUtils.create(RED, "Something went wrong",
+                                    ex.localizedMessage, cat.img)
+                        }
+                )
+            }
+            denied {}
+
+            children {
+                command("delete") {
+                    help = "Delete someone's token. Admin only"
+                    hidden = true
+                    action {
+                        val name = args
+                        val usr = Getters.getUser(name).getSingle()
+                        replyInDm(
+                                if (usr == null) {
+                                    EmbedUtils.create(RED, "Error", "User not found", cat.img)
+                                } else {
+                                    try {
+                                        if (TokenManager.hasToken(usr.name)) {
+                                            TokenManager.deleteToken(usr.name)
+                                            EmbedUtils.create(GREEN, "Success",
+                                                    "Token for ${usr.name} deleted", cat.img)
+                                        } else {
+                                            EmbedUtils.create(RED, "Error",
+                                                    "User have no token", cat.img)
+                                        }
+                                    } catch (ex: SQLException) {
+                                        EmbedUtils.create(RED, "Something went wrong", ex.localizedMessage,
+                                                cat.img)
+                                    }
+                                }
+                        )
+                    }
+                    denied {}
+                }
+                command("regen") {
+                    help = "Recreates you token"
+                    allowed to ADMIN_OR_INTERFACE
+                    hidden = true
+                    action {
+                        val usr = Users[this]
+                        replyInDm(
+                                try {
+                                    if (TokenManager.hasToken(usr.name)) {
+                                        val token = createToken()
+                                        TokenManager.updateToken(usr.name, token)
+                                        EmbedUtils.create(GREEN, "Your new token", token, cat.img)
+                                    } else {
+                                        EmbedUtils.create(RED, "Error",
+                                                "You have no token, run 'token' to create it", cat.img)
+                                    }
+                                } catch (ex: SQLException) {
+                                    EmbedUtils.create(RED, "Something went wrong",
+                                            ex.localizedMessage, cat.img)
+                                }
+                        )
+                        denied {}
+                    }
+                }
+            }
+        }
+        command("name") {
+            help = "Rename the bot"
+            hidden = true
+            allowed to ADMIN_OR_INTERFACE
+            action {
+                SystemIntegrityProtection.allowedNicks.add(args)
+                guild.controller.setNickname(selfMember, args).queue()
+                reply(EmbedUtils.create(GREEN, "Success", "Renamed", cat.img))
+            }
+        }
+        command("asd") {
+            help = "Bot joins your channel"
+            guildOnly = true
+            aliases = arrayOf("фыв")
+            action {
+                guild.audioManager.openAudioConnection(member.voiceState.channel)
+                reactSuccess()
+            }
+        }
+        command("dsa") {
+            help = "Bot leaves your channel"
+        }
     }
 
     override fun init(): Array<Command> = arrayOf(
@@ -53,7 +176,6 @@ object SystemCommands : ICommandList {
                 }
             }.setHidden().build(),
             command("token", "Create bot-api token") {
-                val token = createToken()
                 val usr = Users[author]
                 replyInDm(
                         try {
@@ -61,6 +183,7 @@ object SystemCommands : ICommandList {
                                 EmbedUtils.create(RED, "Error",
                                         "You already have token\n Run 'token regen' to explicitly recreate it", cat.img)
                             } else {
+                                val token = createToken()
                                 TokenManager.putToken(usr.name, token)
                                 EmbedUtils.create(GREEN, "Your token", token, cat.img)
 
