@@ -5,6 +5,7 @@ import com.jagrosh.jdautilities.command.CommandEvent
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.uadaf.uadab.UADAB
 import com.uadaf.uadab.command.base.AdvancedCategory
+import com.uadaf.uadab.command.base.CommandAction
 import com.uadaf.uadab.command.base.CommandBuilder
 import com.uadaf.uadab.command.base.ICommandList
 import com.uadaf.uadab.music.MusicHandler
@@ -26,7 +27,7 @@ object MusicCommands : ICommandList {
     /**
      * All music commands are bound to guilds
      */
-    override fun command(name: String, help: String, action: CommandEvent.() -> Unit): CommandBuilder {
+    override fun command(name: String, help: String, action: CommandAction): CommandBuilder {
         return super.command(name, help, action).setGuildOnly(true)
     }
 

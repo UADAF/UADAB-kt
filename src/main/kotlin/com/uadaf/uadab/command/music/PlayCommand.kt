@@ -24,8 +24,8 @@ object PlayCommand : AdvancedCommand() {
         arguments = "(%songName%|%songUrl%) [--all] [* i%count%] [--first]"
         category = MusicCommands.cat
         allowedFor = ASSETS
-        action = ::action
-        onDenied = ::denied
+        action = { action(this) }
+        onDenied = { denied(this, it) }
     }
 
     fun action(e: CommandEvent) {
