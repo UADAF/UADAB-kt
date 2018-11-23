@@ -129,7 +129,7 @@ object PlayCommand : AdvancedCommand() {
         e.reply(EmbedUtils.create(Color.RED, "You shall not play!", "", MusicCommands.cat.img))
     }
 
-    private fun type(data: BaseData) = when (data) {
+    private fun type(data: BaseData<*>) = when (data) {
         is Song -> "Song"
         is Album -> "Album"
         is Author -> "Author"
@@ -137,12 +137,13 @@ object PlayCommand : AdvancedCommand() {
         else -> "Unknown"
     }
 
-    fun formatData(data: BaseData): String {
+    fun formatData(data: BaseData<*>): String {
         var ret = data.title
         var cur = data
         while (cur.parent !is MusicContext) {
             val title = cur.parent!!.title
             if (title.isNotEmpty()) {
+                println("$ret::$title")
                 ret = "$title/$ret"
             }
             cur = cur.parent!!
@@ -150,7 +151,7 @@ object PlayCommand : AdvancedCommand() {
         return ret
     }
 
-    private fun formatVariants(variants: List<BaseData>) = variants.mapIndexed { i, v ->
+    private fun formatVariants(variants: List<BaseData<*>>) = variants.mapIndexed { i, v ->
         "${i + 1}\u20e3 ${type(v)} - ${formatData(v)}"
     }.joinToString("\n\n")
 

@@ -169,9 +169,9 @@ object MusicHandler {
 
     fun getVariants(name: String) = context.search(name)
 
-    private fun getSongs(data: BaseData): List<Song> {
-        val queue = LinkedList<BaseData>()
-        val ret = mutableListOf<Song>()
+    private fun getSongs(data: BaseData<*>): List<Song<*>> {
+        val queue = LinkedList<BaseData<*>>()
+        val ret = mutableListOf<Song<*>>()
         queue.add(data)
         while (queue.isNotEmpty()) {
             val cur = queue.remove()
@@ -190,12 +190,18 @@ object MusicHandler {
         return ret
     }
 
-    fun load(data: Song, guild: Guild, args: MusicArgs): Pair<LoadResult, String?> {
-        return loadDirect(UADAB.config.MUSIC_DIR + data.path, guild, args)
+    fun load(data: Song<*>, guild: Guild, args: MusicArgs): Pair<LoadResult, String?> {
+        return loadDirect("${UADAB.config.MUSIC_DIR}${data.path}", guild, args)
     }
 
-    fun load(data: BaseData, guild: Guild, args: MusicArgs): Pair<LoadResult, String?> {
+    fun load(data: BaseData<*>, guild: Guild, args: MusicArgs): Pair<LoadResult, String?> {
+        if(data is Song) {
+            return load(data, guild, args)
+        }
         val validSongs = getSongs(data)
+        if(validSongs.isEmpty()) {
+            return LoadResult.NOT_FOUND to "ABSOLUTELY NOTHING!!!!!!!!"
+        }
         val rets = mutableListOf<Pair<LoadResult, String?>>()
         for (i in 1..args.count) {
             rets.add(
