@@ -37,7 +37,7 @@ object QuoteCommands : ICommandList {
             return rep["count"].int
         }
 
-    override fun init(): Array<out Command> = commandList {
+    override fun init(): Array<out Command> = commandList(cat) {
         command("quote") {
             help = "Add or get quote"
             args = "(add|(*none*|i%pos%|i%from%:i%to%|\\* i%count%))"

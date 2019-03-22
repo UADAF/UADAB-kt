@@ -1,6 +1,7 @@
 package com.uadaf.uadab.command.client
 
 import com.jagrosh.jdautilities.command.Command.Category
+import com.uadaf.uadab.command.base.AdvancedCategory
 import com.uadaf.uadab.command.base.AdvancedCommand
 import com.uadaf.uadab.command.base.CommandAction
 import com.uadaf.uadab.command.base.CommandDeniedAction
@@ -98,8 +99,8 @@ class CommandListBuilder {
 
 }
 
-fun commandList(init: CommandListBuilder.() -> Unit): Array<out AdvancedCommand> {
+fun commandList(cat: AdvancedCategory, init: CommandListBuilder.() -> Unit): Array<out AdvancedCommand> {
     val b = CommandListBuilder()
     b.init()
-    return b.build()
+    return b.build().apply { forEach { it.category = cat } }
 }

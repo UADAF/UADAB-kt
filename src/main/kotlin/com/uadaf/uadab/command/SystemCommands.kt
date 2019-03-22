@@ -37,7 +37,7 @@ object SystemCommands : ICommandList {
         return Base64.getUrlEncoder().encodeToString(arr)
     }
 
-    fun dslInit(): Array<out Command> = commandList {
+    override fun init(): Array<out Command> = commandList(cat) {
         command("ping") {
             help = "Bot test"
             hidden = true
@@ -157,104 +157,9 @@ object SystemCommands : ICommandList {
         }
         command("dsa") {
             help = "Bot leaves your channel"
-        }
-    }
-
-    override fun init(): Array<Command> = arrayOf(
-            command("ping", "Bot test") {
-                channel.sendMessage("Pong!").queue()
-                reactSuccess()
-            }.setHidden().build(),
-            command("claim", "Claim admin access, only available if no admin present, claim code required") {
-                if (args == UADAB.claimCode?.toString()) {
-                    UADAB.claimCode = null
-                    println("Admin found. Invalidating claim code")
-                    val user = Users[this]
-                    user.classification = Classification.ADMIN
-                    user.name = "Admin"
-                    reply(Classification.ADMIN.color, "Can You Hear Me?", "Hello, Admin", user.avatarWithClassUrl)
-                }
-            }.setHidden().build(),
-            command("token", "Create bot-api token") {
-                val usr = Users[author]
-                replyInDm(
-                        try {
-                            if (TokenManager.hasToken(usr.name)) {
-                                EmbedUtils.create(RED, "Error",
-                                        "You already have token\n Run 'token regen' to explicitly recreate it", cat.img)
-                            } else {
-                                val token = createToken()
-                                TokenManager.putToken(usr.name, token)
-                                EmbedUtils.create(GREEN, "Your token", token, cat.img)
-
-                            }
-                        } catch (ex: SQLException) {
-                            EmbedUtils.create(RED, "Something went wrong",
-                                    ex.localizedMessage, cat.img)
-                        }
-                )
-            }.setAllowedClasses(ADMIN_OR_INTERFACE).setChildren(
-                    command("delete", "Delete someone's token. Admin only") {
-                        val name = args
-                        val usr = Getters.getUser(name).getSingle()
-                        launch {
-                            replyInDm(
-                                    if (usr == null) {
-                                        EmbedUtils.create(RED, "Error", "User not found", cat.img)
-                                    } else {
-                                        try {
-                                            if (TokenManager.hasToken(usr.name)) {
-                                                TokenManager.deleteToken(usr.name)
-                                                EmbedUtils.create(GREEN, "Success",
-                                                        "Token for ${usr.name} deleted", cat.img)
-                                            } else {
-                                                EmbedUtils.create(RED, "Error",
-                                                        "User have no token", cat.img)
-                                            }
-                                        } catch (ex: SQLException) {
-                                            EmbedUtils.create(RED, "Something went wrong", ex.localizedMessage,
-                                                    cat.img)
-                                        }
-                                    }
-                            )
-                        }
-                    }.setAllowedClasses(ADMIN_ONLY).setOnDenied { _ -> }.setHidden().build(),
-                    command("regen", "Recreates you token") {
-                        val usr = Users[author]
-                        launch {
-                            replyInDm(
-                                    try {
-                                        if (TokenManager.hasToken(usr.name)) {
-                                            val token = createToken()
-                                            TokenManager.updateToken(usr.name, token)
-                                            EmbedUtils.create(GREEN, "Your new token", token, cat.img)
-                                        } else {
-                                            EmbedUtils.create(RED, "Error",
-                                                    "You have no token, run 'token' to create it", cat.img)
-                                        }
-                                    } catch (ex: SQLException) {
-                                        EmbedUtils.create(RED, "Something went wrong",
-                                                ex.localizedMessage, cat.img)
-                                    }
-                            )
-                        }
-                    }.setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _ -> }.setHidden().build()
-            ).setOnDenied { _ -> }.setHidden().build(),
-            command("name", "Rename the bot") {
-                SystemIntegrityProtection.allowedNicks.add(args)
-                guild.controller.setNickname(selfMember, args).queue()
-                reply(EmbedUtils.create(GREEN, "Success", "Renamed", cat.img))
-            }.setHidden().setAllowedClasses(ADMIN_OR_INTERFACE).build(),
-            command("asd", "Bot joins your channel") {
-                val ch = member.voiceState.channel
-                guild.audioManager.openAudioConnection(ch)
-                reactSuccess()
-                launch {
-                    delay(2, TimeUnit.SECONDS)
-                    //MusicHandler.loadSingle("cyhm.mp3", guild, noRepeat = false, addBefore = true)
-                }
-            }.setGuildOnly(true).setBotPermissions(Permission.VOICE_CONNECT).setAliases("фыв").build(),
-            command("dsa", "Bot leaves your channel") {
+            guildOnly = true
+            aliases = arrayOf("выф")
+            action {
                 val user = member.voiceState.channel
                 val bot = selfMember.voiceState.channel
                 if (bot != null && bot.id == user.id) {
@@ -264,9 +169,12 @@ object SystemCommands : ICommandList {
                     reply("I'm not in your channel")
                     reactWarning()
                 }
-
-            }.setGuildOnly(true).setAliases("выф").build(),
-            command("help", "get some help") {
+            }
+        }
+        command("help") {
+            help = "Get some help"
+            allowed to EVERYONE
+            action {
                 if (args.isEmpty()) {
                     sendGeneralHelp(this)
                 } else {
@@ -285,14 +193,21 @@ object SystemCommands : ICommandList {
                         reactWarning()
                     }
                 }
-            }.setAllowedClasses(EVERYONE).build(),
-            command("shred/system/kernel.test", "shutdowns the bot") {
+            }
+        }
+        command("shutdown") {
+            aliases = arrayOf("shred/system/kernel.test")
+            help = "Shutdown the bot"
+            allowed to ADMIN_OR_INTERFACE
+            hidden = true
+            action {
                 val u = Users[this]
                 channel.sendMessage(EmbedUtils.create(cat.color.rgb, "Shutting down", "Goodbye, ${u.name}", u.avatarWithClassUrl)).queue {
                     UADAB.bot.shutdown()
                     exitProcess(0)
                 }
-            }.setAllowedClasses(ADMIN_OR_INTERFACE).setOnDenied { _ ->
+            }
+            denied {
                 val author = Users[this]
                 reply(RED, "Rejecting reboot", "You have no permission to reboot this system\nContacting Admin", author.avatarWithClassUrl)
                 reactError()
@@ -303,8 +218,9 @@ object SystemCommands : ICommandList {
                             String.format("User '%s' tried to shutdown The Machine", author.name),
                             author.getAvatarWithClassUrl(Classification.RELEVANT_THREAT)))
                 }
-            }.setAliases("shutdown").setHidden().build()
-    )
+            }
+        }
+    }
 
 
     private fun BaseEmbedCreater.createHelpForCommand(c: AdvancedCommand, prefix: String, inline: Boolean) {

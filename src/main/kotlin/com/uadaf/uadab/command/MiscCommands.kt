@@ -18,7 +18,7 @@ import kotlinx.coroutines.experimental.async as kAsync
 object MiscCommands : ICommandList {
     override val cat = AdvancedCategory("Misc", Color(0x95a3a6), "http://52.48.142.75/images/math_compass.png")
 
-    override fun init(): Array<out Command> = commandList {
+    override fun init(): Array<out Command> = commandList(cat) {
         command("box") {
             help = "Generate Machine-Box"
             args = "i%size%, %color1%, %color2%"
